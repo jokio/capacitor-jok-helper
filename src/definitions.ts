@@ -7,7 +7,7 @@ declare module "@capacitor/core" {
 export interface JokHelperPlugin {
   echo(options: { value: string }): Promise<{ value: string }>
   setKeychainItem(data: SetKeychainItemProps): Promise<{ value: string }>
-  setKeychainItem(data: GetKeychainItemProps): Promise<{ value: string }>
+  getKeychainItem(data: GetKeychainItemProps): Promise<{ value: string }>
 }
 
 export interface SetKeychainItemProps {
