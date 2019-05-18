@@ -13,8 +13,10 @@ export interface JokHelperPlugin {
 export interface SetKeychainItemProps {
   key: string
   value: string
+  accessGroup?: string
 }
 
 export interface GetKeychainItemProps {
   key: string
+  accessGroup?: string
 }

@@ -15,12 +15,16 @@ public class JokHelper: CAPPlugin {
         ])
     }
 
-
     @objc func setKeychainItem(_ call: CAPPluginCall) {
         let key = call.getString("key") ?? ""
         let value = call.getString("value") ?? ""
+        let accessGroup = call.getString("accessGroup") ?? ""
 
         let keychain = KeychainSwift()
+        if (accessGroup != "") {
+            keychain.accessGroup = accessGroup
+        }
+        
         keychain.synchronizable = true
         keychain.set(value, forKey: key)
 
@@ -31,9 +35,13 @@ public class JokHelper: CAPPlugin {
     
     @objc func getKeychainItem(_ call: CAPPluginCall) {
         let key = call.getString("key") ?? ""
+        let accessGroup = call.getString("accessGroup") ?? ""
         
         let keychain = KeychainSwift()
         keychain.synchronizable = true
+        if (accessGroup != "") {
+            keychain.accessGroup = accessGroup
+        }
 
         let value = keychain.get(key)
         
