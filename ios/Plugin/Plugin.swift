@@ -43,7 +43,7 @@ public class JokHelper: CAPPlugin {
             keychain.accessGroup = accessGroup
         }
 
-        let value = keychain.get(key)
+        let value = keychain.getData(key)
         
         call.success([
             "value": value
@@ -150,6 +150,10 @@ open class KeychainSwift {
         lastQueryParameters = query
         
         lastResultCode = SecItemAdd(query as CFDictionary, nil)
+        
+        if (lastResultCode != noErr) {
+            print("Error saving to Keychain: \(lastResultCode)")
+        }
         
         return lastResultCode == noErr
     }
