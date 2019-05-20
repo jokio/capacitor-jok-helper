@@ -43,7 +43,7 @@ public class JokHelper: CAPPlugin {
             keychain.accessGroup = accessGroup
         }
 
-        let value = keychain.getData(key)
+        let value = keychain.get(key)
         
         call.success([
             "value": value
