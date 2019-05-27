@@ -1,5 +1,5 @@
 import { WebPlugin } from '@capacitor/core';
-import { JokHelperPlugin, SetKeychainItemProps } from './definitions';
+import { JokHelperPlugin, SetKeychainItemProps, SetOrientationLockProps } from './definitions';
 
 export class JokHelperWeb extends WebPlugin implements JokHelperPlugin {
   constructor() {
@@ -24,6 +24,10 @@ export class JokHelperWeb extends WebPlugin implements JokHelperPlugin {
     const value = localStorage.getItem(key)
 
     return { value }
+  }
+
+  async setOrientationLock({ orientationMask }: SetOrientationLockProps) {
+    console.log('setOrientationLock', orientationMask)
   }
 }
 

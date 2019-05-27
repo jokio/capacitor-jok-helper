@@ -1,5 +1,7 @@
 import Foundation
 import Capacitor
+import UIKit
+import Dispatch
 
 /**
  * Please read the Capacitor iOS Plugin Development Guide
@@ -49,9 +51,59 @@ public class JokHelper: CAPPlugin {
             "value": value
         ])
     }
+    
+    @objc func setOrientationLock(_ call: CAPPluginCall) {
+        let orientationMaskString = call.getString("orientationMask", "")
+        
+        let orientation: UIInterfaceOrientationMask
+        
+        switch orientationMaskString {
+        case "all":
+            orientation = UIInterfaceOrientationMask.all
+        case "portrait":
+            orientation = UIInterfaceOrientationMask.portrait
+        case "portraitUpsideDown":
+            orientation = UIInterfaceOrientationMask.portraitUpsideDown
+        case "landscape":
+            orientation = UIInterfaceOrientationMask.landscape
+        case "landscapeLeft":
+            orientation = UIInterfaceOrientationMask.landscapeLeft
+        case "landscapeRight":
+            orientation = UIInterfaceOrientationMask.landscapeRight
+        case "allButUpsideDown":
+            orientation = UIInterfaceOrientationMask.allButUpsideDown
+        default:
+            orientation = UIInterfaceOrientationMask.all
+        }
+        
+        AppUtility.lockOrientation(orientation)
+
+        call.success([
+            "value": true
+            ])
+    }
 }
 
 
+public final class AppUtility {
+    public var orientationLock = UIInterfaceOrientationMask.portrait
+    
+    static func lockOrientation(_ orientation: UIInterfaceOrientationMask) {
+        
+        NotificationCenter.default.post(name: Notification.Name("SET_ORIENTATION_LOCK"), object: nil, userInfo: [
+            "orientationLock": orientation
+        ])
+    }
+    
+    static func lockOrientation(_ orientation: UIInterfaceOrientationMask, andRotateTo rotateOrientation:UIInterfaceOrientation) {
+        
+        self.lockOrientation(orientation)
+        
+        let value = rotateOrientation.rawValue
+        UIDevice.current.setValue(value, forKey: "orientation")
+        UINavigationController.attemptRotationToDeviceOrientation()
+    }
+}
 
 
 
