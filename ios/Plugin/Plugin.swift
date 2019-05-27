@@ -82,6 +82,25 @@ public class JokHelper: CAPPlugin {
             "value": true
             ])
     }
+    
+    @objc func listenDeviceOrientationChanges(_ call: CAPPluginCall) {
+        
+        NotificationCenter.default.addObserver(forName: Notification.Name("ORIENTATION_CHANGE"), object: nil, queue: OperationQueue.main) { (notification) in
+            
+            if let data = notification.userInfo
+            {
+                self.notifyListeners("DeviceOrientationChange", data: [
+                    "isLandscape" : data["isLandscape"],
+                    "isPortrait" : data["isPortrait"],
+                    "orientationRawValue" : data["orientationRawValue"]
+                ])
+            }
+        }
+        
+        call.success([
+            "value": true
+            ])
+    }
 }
 
 
