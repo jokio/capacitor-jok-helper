@@ -26,12 +26,22 @@ export class JokHelperWeb extends WebPlugin implements JokHelperPlugin {
     return { value }
   }
 
-  async setOrientationLock({ orientationMask }: SetOrientationLockProps) {
+  async setDeviceOrientationLock({ orientationMask }: SetOrientationLockProps) {
     console.log('setOrientationLock', orientationMask)
+  }
+
+  async getDeviceOrientation() {
+    console.log('getDeviceOrientation')
+
+    return <any>null
   }
 
   async listenDeviceOrientationChanges() {
     console.log('listenDeviceOrientationChanges')
+  }
+
+  async isWideScreen() {
+    return { value: false }
   }
 }
 

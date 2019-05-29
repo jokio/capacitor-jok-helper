@@ -7,6 +7,9 @@ CAP_PLUGIN(JokHelper, "JokHelper",
            CAP_PLUGIN_METHOD(echo, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(setKeychainItem, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(getKeychainItem, CAPPluginReturnPromise);
-           CAP_PLUGIN_METHOD(setOrientationLock, CAPPluginReturnPromise);
+           CAP_PLUGIN_METHOD(setDeviceOrientationLock, CAPPluginReturnPromise);
+           CAP_PLUGIN_METHOD(getDeviceOrientation, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(listenDeviceOrientationChanges, CAPPluginReturnPromise);
+           CAP_PLUGIN_METHOD(isWideScreen, CAPPluginReturnPromise);
 )
+

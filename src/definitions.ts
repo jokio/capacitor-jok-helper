@@ -8,8 +8,10 @@ export interface JokHelperPlugin {
   echo(options: { value: string }): Promise<{ value: string }>
   setKeychainItem(data: SetKeychainItemProps): Promise<{ value: string }>
   getKeychainItem(data: GetKeychainItemProps): Promise<{ value: string }>
-  setOrientationLock(data: SetOrientationLockProps): Promise<void>
+  setDeviceOrientationLock(data: SetOrientationLockProps): Promise<void>
+  getDeviceOrientation(): Promise<DeviceOrientationData | null>
   listenDeviceOrientationChanges(): Promise<void>
+  isWideScreen(): Promise<{ value: boolean }>
 }
 
 export interface SetKeychainItemProps {
@@ -30,7 +32,16 @@ export interface SetOrientationLockProps {
 export interface DeviceOrientationChangeData {
   isPortrait: boolean
   isLandscape: boolean
-  orientationRawValue: number
+  isFlat: boolean
+  rawValue: number
+}
+
+export interface DeviceOrientationData {
+  isPortrait: boolean
+  isLandscape: boolean
+  isFlat: boolean
+  rawValue: number
+  orientation: string
 }
 
 export enum JokPluginEvents {

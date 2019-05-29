@@ -52,7 +52,7 @@ public class JokHelper: CAPPlugin {
         ])
     }
     
-    @objc func setOrientationLock(_ call: CAPPluginCall) {
+    @objc func setDeviceOrientationLock(_ call: CAPPluginCall) {
         let orientationMaskString = call.getString("orientationMask", "")
         
         let orientation: UIInterfaceOrientationMask
@@ -83,6 +83,35 @@ public class JokHelper: CAPPlugin {
             ])
     }
     
+    @objc func getDeviceOrientation(_ call: CAPPluginCall) {
+        
+        let orientation: String
+        let currentOrientation = UIDevice.current.orientation
+
+        switch currentOrientation {
+            case UIDeviceOrientation.portrait:
+                orientation = "portrait"
+            case UIDeviceOrientation.portraitUpsideDown:
+                orientation = "portraitUpsideDown"
+            case UIDeviceOrientation.landscapeLeft:
+                orientation = "landscapeLeft"
+            case UIDeviceOrientation.landscapeRight:
+                orientation = "landscapeRight"
+            case UIDeviceOrientation.unknown:
+                orientation = "unknown"
+            default:
+                orientation = "unknown"
+        }
+
+        call.success([
+            "isPortrait":currentOrientation.isPortrait,
+            "isFlat":currentOrientation.isFlat,
+            "isLandscape":currentOrientation.isLandscape,
+            "rawValue": currentOrientation.rawValue,
+            "orientation": orientation
+        ])
+    }
+    
     @objc func listenDeviceOrientationChanges(_ call: CAPPluginCall) {
         
         NotificationCenter.default.addObserver(forName: Notification.Name("ORIENTATION_CHANGE"), object: nil, queue: OperationQueue.main) { (notification) in
@@ -91,14 +120,24 @@ public class JokHelper: CAPPlugin {
             {
                 self.notifyListeners("DeviceOrientationChange", data: [
                     "isLandscape" : data["isLandscape"],
+                    "isFlat" : data["isFlat"],
                     "isPortrait" : data["isPortrait"],
-                    "orientationRawValue" : data["orientationRawValue"]
+                    "rawValue" : data["rawValue"]
                 ])
             }
         }
         
         call.success([
             "value": true
+            ])
+    }
+    
+    @objc func isWideScreen(_ call: CAPPluginCall) {
+        
+        let result = UIScreen.main.bounds.height >= 812
+        
+        call.success([
+            "value": result
             ])
     }
 }
