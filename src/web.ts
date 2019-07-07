@@ -40,8 +40,12 @@ export class JokHelperWeb extends WebPlugin implements JokHelperPlugin {
     console.log('listenDeviceOrientationChanges')
   }
 
-  async isWideScreen() {
-    return { value: false }
+  isWideScreen() {
+    return Promise.resolve({ value: false })
+  }
+
+  isMobileDevice() {
+    return Promise.resolve({ value: false })
   }
 }
 

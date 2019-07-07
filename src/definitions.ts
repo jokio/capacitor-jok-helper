@@ -12,6 +12,7 @@ export interface JokHelperPlugin {
   getDeviceOrientation(): Promise<DeviceOrientationData | null>
   listenDeviceOrientationChanges(): Promise<void>
   isWideScreen(): Promise<{ value: boolean }>
+  isMobileDevice(): Promise<{ value: boolean }>
 }
 
 export interface SetKeychainItemProps {

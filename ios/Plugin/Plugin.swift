@@ -140,6 +140,15 @@ public class JokHelper: CAPPlugin {
             "value": result
             ])
     }
+    
+    @objc func isMobileDevice(_ call: CAPPluginCall) {
+        
+        let result = UIDevice.current.userInterfaceIdiom == .phone
+
+        call.success([
+            "value": result
+            ])
+    }
 }
 
 
