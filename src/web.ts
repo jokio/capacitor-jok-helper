@@ -1,5 +1,5 @@
 import { WebPlugin } from '@capacitor/core';
-import { JokHelperPlugin, SetKeychainItemProps, SetOrientationLockProps } from './definitions';
+import { JokHelperPlugin, SetKeychainItemProps, SetOrientationLockProps, PushNotificationState, PushNotificationStateUserStatus } from './definitions';
 
 export class JokHelperWeb extends WebPlugin implements JokHelperPlugin {
   constructor() {
@@ -46,6 +46,21 @@ export class JokHelperWeb extends WebPlugin implements JokHelperPlugin {
 
   isMobileDevice() {
     return Promise.resolve({ value: false })
+  }
+
+  async getPushNotificationsState() {
+    return <PushNotificationState>{
+      userId: null,
+      hasPrompted: false,
+      userStatus: PushNotificationStateUserStatus.OSNotificationPermissionNotDetermined,
+      pushToken: '',
+      isSubscribed: false,
+      userSubscriptionSetting: false,
+    }
+  }
+
+  async askPushNotificationsPermission() {
+    return { accepted: false }
   }
 }
 

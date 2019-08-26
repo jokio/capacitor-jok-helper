@@ -12,5 +12,7 @@ CAP_PLUGIN(JokHelper, "JokHelper",
            CAP_PLUGIN_METHOD(listenDeviceOrientationChanges, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(isWideScreen, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(isMobileDevice, CAPPluginReturnPromise);
+           CAP_PLUGIN_METHOD(getPushNotificationsState, CAPPluginReturnPromise);
+           CAP_PLUGIN_METHOD(askPushNotificationsPermission, CAPPluginReturnPromise);
 )
 

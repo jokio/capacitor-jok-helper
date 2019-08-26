@@ -13,6 +13,8 @@ export interface JokHelperPlugin {
   listenDeviceOrientationChanges(): Promise<void>
   isWideScreen(): Promise<{ value: boolean }>
   isMobileDevice(): Promise<{ value: boolean }>
+  getPushNotificationsState(): Promise<PushNotificationState>
+  askPushNotificationsPermission(): Promise<{ accepted: boolean }>
 }
 
 export interface SetKeychainItemProps {
@@ -24,6 +26,30 @@ export interface SetKeychainItemProps {
 export interface GetKeychainItemProps {
   key: string
   accessGroup?: string
+}
+
+export interface PushNotificationState {
+  userId: string
+  hasPrompted: boolean
+  userStatus: PushNotificationStateUserStatus
+  pushToken: string // "74b3b61d835351754367e926ae18be50091ab6d5f40cd8870f5ec5db291c7e77"
+  isSubscribed: boolean
+  userSubscriptionSetting: boolean
+}
+
+export enum PushNotificationStateUserStatus {
+  // The user has not yet made a choice regarding whether your app can show notifications.
+  OSNotificationPermissionNotDetermined = 0,
+
+  // The application is not authorized to post user notifications.
+  OSNotificationPermissionDenied = 1,
+
+  // The application is authorized to post user notifications.
+  OSNotificationPermissionAuthorized = 2,
+
+  // the application is only authorized to post Provisional notifications (direct to history)
+  OSNotificationPermissionProvisional = 3
+
 }
 
 export interface SetOrientationLockProps {

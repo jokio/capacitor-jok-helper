@@ -2,6 +2,7 @@ import Foundation
 import Capacitor
 import UIKit
 import Dispatch
+import OneSignal
 
 /**
  * Please read the Capacitor iOS Plugin Development Guide
@@ -140,7 +141,7 @@ public class JokHelper: CAPPlugin {
             "value": result
             ])
     }
-    
+
     @objc func isMobileDevice(_ call: CAPPluginCall) {
         
         let result = UIDevice.current.userInterfaceIdiom == .phone
@@ -148,6 +149,44 @@ public class JokHelper: CAPPlugin {
         call.success([
             "value": result
             ])
+    }
+
+    @objc func getPushNotificationsState(_ call:CAPPluginCall) {
+        
+        let status: OSPermissionSubscriptionState = OneSignal.getPermissionSubscriptionState()
+        
+        let hasPrompted = status.permissionStatus.hasPrompted
+        let userStatus = status.permissionStatus.status
+        
+        let isSubscribed = status.subscriptionStatus.subscribed
+        let userSubscriptionSetting = status.subscriptionStatus.userSubscriptionSetting
+        let userId = status.subscriptionStatus.userId
+        let pushToken = status.subscriptionStatus.pushToken
+        
+        //        print("hasPrompted = \(hasPrompted)")
+        //        print("userStatus = \(userStatus)")
+        //        print("isSubscribed = \(isSubscribed)")
+        //        print("userSubscriptionSetting = \(userSubscriptionSetting)")
+        //        print("userID = \(userID)")
+        //        print("pushToken = \(pushToken)")
+        
+        
+        call.success([
+            "hasPrompted": hasPrompted,
+            "userStatus": userStatus.rawValue,
+            "isSubscribed": isSubscribed,
+            "userSubscriptionSetting": userSubscriptionSetting,
+            "userId": userId,
+            "pushToken": pushToken
+            ])
+    }
+    
+    @objc func askPushNotificationsPermission(_ call:CAPPluginCall) {
+        OneSignal.promptForPushNotifications(userResponse: { accepted in
+            call.success([
+                "accepted": accepted
+                ])
+        })
     }
 }
 
