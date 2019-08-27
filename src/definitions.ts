@@ -15,6 +15,7 @@ export interface JokHelperPlugin {
   isMobileDevice(): Promise<{ value: boolean }>
   getPushNotificationsState(): Promise<PushNotificationState | null>
   askPushNotificationsPermission(): Promise<{ accepted: boolean }>
+  openAppSettings(): Promise<{ success: boolean }>
 }
 
 export interface SetKeychainItemProps {

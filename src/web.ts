@@ -55,6 +55,10 @@ export class JokHelperWeb extends WebPlugin implements JokHelperPlugin {
   async askPushNotificationsPermission() {
     return { accepted: false }
   }
+
+  async openAppSettings() {
+    return Promise.resolve({ success: false })
+  }
 }
 
 const JokHelper = new JokHelperWeb();
