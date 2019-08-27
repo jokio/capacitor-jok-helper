@@ -13,7 +13,7 @@ export interface JokHelperPlugin {
   listenDeviceOrientationChanges(): Promise<void>
   isWideScreen(): Promise<{ value: boolean }>
   isMobileDevice(): Promise<{ value: boolean }>
-  getPushNotificationsState(): Promise<PushNotificationState>
+  getPushNotificationsState(): Promise<PushNotificationState | null>
   askPushNotificationsPermission(): Promise<{ accepted: boolean }>
 }
 
