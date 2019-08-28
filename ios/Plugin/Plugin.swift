@@ -152,41 +152,29 @@ public class JokHelper: CAPPlugin {
     }
 
     @objc func getPushNotificationsState(_ call:CAPPluginCall) {
-        
-        let status: OSPermissionSubscriptionState = OneSignal.getPermissionSubscriptionState()
-        
-        let hasPrompted = status.permissionStatus.hasPrompted
-        let userStatus = status.permissionStatus.status
-        
-        let isSubscribed = status.subscriptionStatus.subscribed
-        let userSubscriptionSetting = status.subscriptionStatus.userSubscriptionSetting
-        let userId = status.subscriptionStatus.userId
-        let pushToken = status.subscriptionStatus.pushToken
-        
-        //        print("hasPrompted = \(hasPrompted)")
-        //        print("userStatus = \(userStatus)")
-        //        print("isSubscribed = \(isSubscribed)")
-        //        print("userSubscriptionSetting = \(userSubscriptionSetting)")
-        //        print("userID = \(userID)")
-        //        print("pushToken = \(pushToken)")
-        
-        
-        call.success([
-            "hasPrompted": hasPrompted,
-            "userStatus": userStatus.rawValue,
-            "isSubscribed": isSubscribed,
-            "userSubscriptionSetting": userSubscriptionSetting,
-            "userId": userId,
-            "pushToken": pushToken
-            ])
+      
+        NotificationCenter.default.post(name: Notification.Name("getPushNotificationsStateRequest"), object: nil, userInfo: [:])
+
+        NotificationCenter.default.addObserver(forName: Notification.Name("getPushNotificationsStateResult"), object: nil, queue: OperationQueue.main) { (notification) in
+            
+            if let data = notification.userInfo
+            {
+                call.success(data as! [String:Any])
+            }
+        }
+
     }
     
     @objc func askPushNotificationsPermission(_ call:CAPPluginCall) {
-        OneSignal.promptForPushNotifications(userResponse: { accepted in
-            call.success([
-                "accepted": accepted
-                ])
-        })
+        NotificationCenter.default.post(name: Notification.Name("askPushNotificationsPermissionRequest"), object: nil, userInfo: [:])
+        
+        NotificationCenter.default.addObserver(forName: Notification.Name("askPushNotificationsPermissionResult"), object: nil, queue: OperationQueue.main) { (notification) in
+            
+            if let data = notification.userInfo
+            {
+                call.success(data as! [String:Any])
+            }
+        }
     }
 
     @objc func openAppSettings(_ call:CAPPluginCall) {
