@@ -155,20 +155,27 @@ public class JokHelper: CAPPlugin {
       
         NotificationCenter.default.post(name: Notification.Name("getPushNotificationsStateRequest"), object: nil, userInfo: [:])
 
-        NotificationCenter.default.addObserver(forName: Notification.Name("getPushNotificationsStateResult"), object: nil, queue: OperationQueue.main) { (notification) in
+        var token: NSObjectProtocol?
+        
+        token = NotificationCenter.default.addObserver(forName: Notification.Name("getPushNotificationsStateResult"), object: nil, queue: OperationQueue.main) { (notification) in
+            
+            NotificationCenter.default.removeObserver(token!)
             
             if let data = notification.userInfo
             {
                 call.success(data as! [String:Any])
             }
         }
-
     }
     
     @objc func askPushNotificationsPermission(_ call:CAPPluginCall) {
         NotificationCenter.default.post(name: Notification.Name("askPushNotificationsPermissionRequest"), object: nil, userInfo: [:])
         
-        NotificationCenter.default.addObserver(forName: Notification.Name("askPushNotificationsPermissionResult"), object: nil, queue: OperationQueue.main) { (notification) in
+        var token: NSObjectProtocol?
+        
+        token = NotificationCenter.default.addObserver(forName: Notification.Name("askPushNotificationsPermissionResult"), object: nil, queue: OperationQueue.main) { (notification) in
+            
+            NotificationCenter.default.removeObserver(token!)
             
             if let data = notification.userInfo
             {
