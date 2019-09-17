@@ -55,29 +55,52 @@ public class JokHelper: CAPPlugin {
     
     @objc func setDeviceOrientationLock(_ call: CAPPluginCall) {
         let orientationMaskString = call.getString("orientationMask", "")
+        let preferredOrientationRawValue = call.getInt("preferredOrientation", 0)
         
-        let orientation: UIInterfaceOrientationMask
+        var orientationMask: UIInterfaceOrientationMask
+        var preferredOrientation: UIInterfaceOrientation
         
         switch orientationMaskString {
         case "all":
-            orientation = UIInterfaceOrientationMask.all
+            orientationMask = UIInterfaceOrientationMask.all
         case "portrait":
-            orientation = UIInterfaceOrientationMask.portrait
+            orientationMask = UIInterfaceOrientationMask.portrait
         case "portraitUpsideDown":
-            orientation = UIInterfaceOrientationMask.portraitUpsideDown
+            orientationMask = UIInterfaceOrientationMask.portraitUpsideDown
         case "landscape":
-            orientation = UIInterfaceOrientationMask.landscape
+            orientationMask = UIInterfaceOrientationMask.landscape
         case "landscapeLeft":
-            orientation = UIInterfaceOrientationMask.landscapeLeft
+            orientationMask = UIInterfaceOrientationMask.landscapeLeft
         case "landscapeRight":
-            orientation = UIInterfaceOrientationMask.landscapeRight
+            orientationMask = UIInterfaceOrientationMask.landscapeRight
         case "allButUpsideDown":
-            orientation = UIInterfaceOrientationMask.allButUpsideDown
+            orientationMask = UIInterfaceOrientationMask.allButUpsideDown
         default:
-            orientation = UIInterfaceOrientationMask.all
+            orientationMask = UIInterfaceOrientationMask.all
+        }
+
+        switch preferredOrientationRawValue {
+        case UIInterfaceOrientation.portrait.rawValue:
+            preferredOrientation = UIInterfaceOrientation.portrait
+
+        case UIInterfaceOrientation.portraitUpsideDown.rawValue:
+            preferredOrientation = UIInterfaceOrientation.portraitUpsideDown
+
+        case UIInterfaceOrientation.landscapeLeft.rawValue:
+            preferredOrientation = UIInterfaceOrientation.landscapeLeft
+
+        case UIInterfaceOrientation.landscapeRight.rawValue:
+            preferredOrientation = UIInterfaceOrientation.landscapeRight
+
+        default:
+            preferredOrientation = UIInterfaceOrientation.unknown
         }
         
-        AppUtility.lockOrientation(orientation)
+        
+        NotificationCenter.default.post(name: Notification.Name("SET_ORIENTATION_LOCK"), object: nil, userInfo: [
+            "orientationLock": orientationMask,
+            "preferredOrientation": preferredOrientation
+            ])
 
         call.success([
             "value": true
@@ -153,37 +176,28 @@ public class JokHelper: CAPPlugin {
 
     @objc func getPushNotificationsState(_ call:CAPPluginCall) {
       
+        NotificationCenter.default.post(name: Notification.Name("getPushNotificationsStateRequest"), object: nil, userInfo: [:])
 
-        var token: NSObjectProtocol?
-        
-        token = NotificationCenter.default.addObserver(forName: Notification.Name("getPushNotificationsStateResult"), object: nil, queue: OperationQueue.main) { (notification) in
-            
-            NotificationCenter.default.removeObserver(token!)
+        NotificationCenter.default.addObserver(forName: Notification.Name("getPushNotificationsStateResult"), object: nil, queue: OperationQueue.main) { (notification) in
             
             if let data = notification.userInfo
             {
                 call.success(data as! [String:Any])
             }
         }
-        
-        NotificationCenter.default.post(name: Notification.Name("getPushNotificationsStateRequest"), object: nil, userInfo: [:])
+
     }
     
     @objc func askPushNotificationsPermission(_ call:CAPPluginCall) {
-  
-        var token: NSObjectProtocol?
+        NotificationCenter.default.post(name: Notification.Name("askPushNotificationsPermissionRequest"), object: nil, userInfo: [:])
         
-        token = NotificationCenter.default.addObserver(forName: Notification.Name("askPushNotificationsPermissionResult"), object: nil, queue: OperationQueue.main) { (notification) in
-            
-            NotificationCenter.default.removeObserver(token!)
+        NotificationCenter.default.addObserver(forName: Notification.Name("askPushNotificationsPermissionResult"), object: nil, queue: OperationQueue.main) { (notification) in
             
             if let data = notification.userInfo
             {
                 call.success(data as! [String:Any])
             }
         }
-        
-        NotificationCenter.default.post(name: Notification.Name("askPushNotificationsPermissionRequest"), object: nil, userInfo: [:])
     }
 
     @objc func openAppSettings(_ call:CAPPluginCall) {
@@ -201,27 +215,6 @@ public class JokHelper: CAPPlugin {
         call.success([
             "success": true
             ])
-    }
-}
-
-
-public final class AppUtility {
-    public var orientationLock = UIInterfaceOrientationMask.portrait
-    
-    static func lockOrientation(_ orientation: UIInterfaceOrientationMask) {
-        
-        NotificationCenter.default.post(name: Notification.Name("SET_ORIENTATION_LOCK"), object: nil, userInfo: [
-            "orientationLock": orientation
-        ])
-    }
-    
-    static func lockOrientation(_ orientation: UIInterfaceOrientationMask, andRotateTo rotateOrientation:UIInterfaceOrientation) {
-        
-        self.lockOrientation(orientation)
-        
-        let value = rotateOrientation.rawValue
-        UIDevice.current.setValue(value, forKey: "orientation")
-        UINavigationController.attemptRotationToDeviceOrientation()
     }
 }
 
