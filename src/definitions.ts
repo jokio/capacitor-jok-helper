@@ -55,6 +55,15 @@ export enum PushNotificationStateUserStatus {
 
 export interface SetOrientationLockProps {
   orientationMask: 'all' | 'portrait' | 'portraitUpsideDown' | 'landscape' | 'landscapeLeft' | 'landscapeRight' | 'allButUpsideDown'
+  preferredOrientation: InterfaceOrientation
+}
+
+export enum InterfaceOrientation {
+  unknown = 0,
+  portrait = 1,
+  portraitUpsideDown = 2,
+  landscapeLeft = 3,
+  landscapeRight = 4,
 }
 
 export interface DeviceOrientationChangeData {
