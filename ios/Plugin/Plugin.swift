@@ -2,7 +2,6 @@ import Foundation
 import Capacitor
 import UIKit
 import Dispatch
-import OneSignal
 
 /**
  * Please read the Capacitor iOS Plugin Development Guide
