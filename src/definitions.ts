@@ -11,6 +11,7 @@ export interface JokHelperPlugin {
   setDeviceOrientationLock(data: SetOrientationLockProps): Promise<void>
   getDeviceOrientation(): Promise<DeviceOrientationData | null>
   listenDeviceOrientationChanges(): Promise<void>
+  listenPushNotificationEvents(): Promise<void>
   isWideScreen(): Promise<{ value: boolean }>
   isMobileDevice(): Promise<{ value: boolean }>
   getPushNotificationsState(): Promise<PushNotificationState | null>

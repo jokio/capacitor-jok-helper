@@ -156,6 +156,21 @@ public class JokHelper: CAPPlugin {
             ])
     }
     
+    @objc func listenPushNotificationEvents(_ call: CAPPluginCall) {
+        
+        NotificationCenter.default.addObserver(forName: Notification.Name("PUSH_NOTIFICATION_EVENT"), object: nil, queue: OperationQueue.main) { (notification) in
+            
+            if let data = notification.userInfo
+            {
+                self.notifyListeners("appPushNotificationEvent", data: data as? [String : Any])
+            }
+        }
+        
+        call.success([
+            "value": true
+            ])
+    }
+    
     @objc func isWideScreen(_ call: CAPPluginCall) {
         
         let result = UIScreen.main.bounds.height >= 812
