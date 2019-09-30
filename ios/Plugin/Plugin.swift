@@ -190,8 +190,6 @@ public class JokHelper: CAPPlugin {
 
     @objc func getPushNotificationsState(_ call:CAPPluginCall) {
       
-        NotificationCenter.default.post(name: Notification.Name("getPushNotificationsStateRequest"), object: nil, userInfo: [:])
-
         NotificationCenter.default.addObserver(forName: Notification.Name("getPushNotificationsStateResult"), object: nil, queue: OperationQueue.main) { (notification) in
             
             if let data = notification.userInfo
@@ -199,6 +197,8 @@ public class JokHelper: CAPPlugin {
                 call.success(data as! [String:Any])
             }
         }
+
+        NotificationCenter.default.post(name: Notification.Name("getPushNotificationsStateRequest"), object: nil, userInfo: [:])
 
     }
     
