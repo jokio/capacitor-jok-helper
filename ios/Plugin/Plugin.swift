@@ -2,6 +2,7 @@ import Foundation
 import Capacitor
 import UIKit
 import Dispatch
+import StoreKit
 
 /**
  * Please read the Capacitor iOS Plugin Development Guide
@@ -190,6 +191,8 @@ public class JokHelper: CAPPlugin {
 
     @objc func getPushNotificationsState(_ call:CAPPluginCall) {
       
+        NotificationCenter.default.post(name: Notification.Name("getPushNotificationsStateRequest"), object: nil, userInfo: [:])
+
         NotificationCenter.default.addObserver(forName: Notification.Name("getPushNotificationsStateResult"), object: nil, queue: OperationQueue.main) { (notification) in
             
             if let data = notification.userInfo
@@ -197,8 +200,6 @@ public class JokHelper: CAPPlugin {
                 call.success(data as! [String:Any])
             }
         }
-
-        NotificationCenter.default.post(name: Notification.Name("getPushNotificationsStateRequest"), object: nil, userInfo: [:])
 
     }
     
@@ -230,8 +231,167 @@ public class JokHelper: CAPPlugin {
             "success": true
             ])
     }
+    
+    @objc func canMakePayments(_ call: CAPPluginCall) {
+
+        call.success([
+            "value": SKPaymentQueue.canMakePayments()
+        ])
+        
+    }
+    
+    
+    var productsResultDelegate: ProductsResultDelegate?
+    var products: [SKProduct] = []
+    
+    @objc func loadProducts(_ call: CAPPluginCall) {
+        let identifiers = call.get("productIds", [String].self)
+        
+        // Create a set for the product identifiers.
+        let productIdentifiers = Set<String>(identifiers!)
+
+        self.productsResultDelegate = ProductsResultDelegate(productsReceived: { (response) in
+            
+            self.products = response.products
+            
+            call.success([
+                "success": true,
+                "products": response.products.map({(product: SKProduct) in
+                    return [
+                        "localizedDescription": product.localizedDescription,
+                        "localizedTitle": product.description,
+                        "price": product.price,
+                        "formattedPrice": product.formattedPrice,
+                        "currencySymbol": product.priceLocale.currencySymbol!,
+                        "currencyCode": product.priceLocale.currencyCode!,
+                        "productIdentifier": product.productIdentifier,
+                        "isDownloadable": product.isDownloadable,
+                        "downloadContentLengths": product.downloadContentLengths,
+                        "contentVersion": product.contentVersion,
+                        "downloadContentVersion": product.downloadContentVersion
+                    ]
+                }),
+                "invalidProducts": response.invalidProductIdentifiers
+            ])
+            
+            self.productsResultDelegate = nil
+        })
+        
+        // Initialize the product request with the above identifiers.
+        let productRequest = SKProductsRequest(productIdentifiers: productIdentifiers)
+        productRequest.delegate = self.productsResultDelegate
+        
+        // Send the request to the App Store.
+        productRequest.start()
+    }
+    
+    @objc func requestPayment(_ call: CAPPluginCall) {
+
+        let identifier = call.getString("productId")
+        
+        if let product = self.products.first(where: { $0.productIdentifier == identifier }) {
+            
+            let payment = SKMutablePayment(product: product)
+            payment.quantity = 1
+            
+            SKPaymentQueue.default().add(payment)
+
+            call.success([
+                "success": true
+            ])
+            
+            return
+        }
+        
+        call.success([
+            "success": false,
+            "message": "Product not loaded, please call getProducts first"
+        ])
+    }
+    
+    @objc func finishPayment(_ call: CAPPluginCall) {
+        
+        let transactionId = call.getString("transactionId")
+        
+        let transactions =  SKPaymentQueue.default().transactions
+        
+        if let transaction = transactions.first(where: {$0.transactionIdentifier == transactionId}) {
+            SKPaymentQueue.default().finishTransaction(transaction)
+            
+            call.success([
+                "success": true
+            ])
+            return
+        }
+        
+        call.success([
+            "success": false,
+            "message": "Transaction not found"
+        ])
+    }
+    
+    @objc func listenTransactionStateChanges(_ call: CAPPluginCall) {
+        
+        NotificationCenter.default.addObserver(forName: Notification.Name("TRANSACTION_STATE_CHANGE"), object: nil, queue: OperationQueue.main) { (notification) in
+            
+            if let data = notification.userInfo
+            {
+                self.notifyListeners("TransactionStateChange", data: data as! [String : Any])
+            }
+        }
+        
+        let transactions = SKPaymentQueue.default().transactions
+        
+        transactions.forEach { transaction in
+            var errorMessage: String = ""
+            var errorCode: SKError.Code?
+            var hasError = false
+            
+            if let error = transaction.error {
+                errorMessage = error.localizedDescription
+                errorCode =  (transaction.error as? SKError)!.code
+                hasError = true
+            }
+
+            NotificationCenter.default.post(name: Notification.Name("TRANSACTION_STATE_CHANGE"), object: nil, userInfo: [
+                "transactionId": transaction.transactionIdentifier,
+                "transactionState": transaction.transactionState.rawValue,
+                "productId": transaction.payment.productIdentifier,
+                "hasError": hasError,
+                "errorCode": (errorCode == nil) ? "" : errorCode!.rawValue,
+                "errorMessage": errorMessage
+            ])
+        }
+      
+        call.success([
+            "value": true
+            ])
+    }
 }
 
+public class ProductsResultDelegate: NSObject, SKProductsRequestDelegate {
+    var productsReceived: (SKProductsResponse)->()
+    
+    init(
+        productsReceived:@escaping (SKProductsResponse)->()
+    ) {
+        self.productsReceived = productsReceived
+    }
+
+    public func productsRequest(_ request: SKProductsRequest, didReceive response: SKProductsResponse){
+        self.productsReceived(response)
+    }
+}
+
+extension SKProduct {
+    /// - returns: The cost of the product formatted in the local currency.
+    var formattedPrice: String? {
+        let formatter = NumberFormatter()
+        formatter.numberStyle = .currency
+        formatter.locale = self.priceLocale
+        return formatter.string(from: self.price)
+    }
+}
 
 
 /**

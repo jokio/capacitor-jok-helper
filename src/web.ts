@@ -1,5 +1,5 @@
 import { WebPlugin } from '@capacitor/core';
-import { JokHelperPlugin, SetKeychainItemProps, SetOrientationLockProps } from './definitions';
+import { JokHelperPlugin, SetKeychainItemProps, SetOrientationLockProps, LoadProductsProps, SKProduct, RequestPaymentProps, FinishPaymentProps } from './definitions';
 
 export class JokHelperWeb extends WebPlugin implements JokHelperPlugin {
   constructor() {
@@ -52,16 +52,46 @@ export class JokHelperWeb extends WebPlugin implements JokHelperPlugin {
     return Promise.resolve({ value: false })
   }
 
-  async getPushNotificationsState() {
+  getPushNotificationsState() {
     return Promise.resolve(null)
   }
 
-  async askPushNotificationsPermission() {
-    return { accepted: false }
+  askPushNotificationsPermission() {
+    return Promise.resolve({ accepted: false })
   }
 
-  async openAppSettings() {
+  openAppSettings() {
     return Promise.resolve({ success: false })
+  }
+
+  canMakePayments(): Promise<{ value: boolean }> {
+    return Promise.resolve({ value: false })
+  }
+
+  loadProducts(_: LoadProductsProps): Promise<{ success: boolean, products: SKProduct[], invalidProducts: string[] }> {
+    return Promise.resolve({
+      success: false,
+      products: [],
+      invalidProducts: [],
+    })
+  }
+
+  requestPayment(_: RequestPaymentProps): Promise<{ success: boolean, message: string }> {
+    return Promise.resolve({
+      success: false,
+      message: '',
+    })
+  }
+
+  finishPayment(_: FinishPaymentProps): Promise<{ success: boolean, message: string }> {
+    return Promise.resolve({
+      success: false,
+      message: '',
+    })
+  }
+
+  listenTransactionStateChanges(): Promise<void> {
+    return Promise.resolve(null)
   }
 }
 

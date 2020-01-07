@@ -17,6 +17,37 @@ export interface JokHelperPlugin {
   getPushNotificationsState(): Promise<PushNotificationState | null>
   askPushNotificationsPermission(): Promise<{ accepted: boolean }>
   openAppSettings(): Promise<{ success: boolean }>
+  canMakePayments(): Promise<{ value: boolean }>
+  loadProducts(data: LoadProductsProps): Promise<{ success: boolean, products: SKProduct[], invalidProducts: string[] }>
+  requestPayment(data: RequestPaymentProps): Promise<{ success: boolean, message: string }>
+  finishPayment(data: FinishPaymentProps): Promise<{ success: boolean, message: string }>
+  listenTransactionStateChanges(): Promise<void>
+}
+
+export interface LoadProductsProps {
+  productIds: string[]
+}
+
+export interface SKProduct {
+  localizedDescription: string
+  localizedTitle: string
+  price: number
+  formattedPrice: string
+  currencySymbol: string
+  currencyCode: string
+  productIdentifier: string
+  isDownloadable: boolean
+  downloadContentLengths: number
+  contentVersion: string
+  downloadContentVersion: string
+}
+
+export interface RequestPaymentProps {
+  productId: string
+}
+
+export interface FinishPaymentProps {
+  transactionId: string
 }
 
 export interface SetKeychainItemProps {
@@ -84,4 +115,78 @@ export interface DeviceOrientationData {
 
 export enum JokPluginEvents {
   DeviceOrientationChange = 'DeviceOrientationChange'
+}
+
+export interface TransactionStateChangeData {
+  transactionId: string
+  transactionState: TransactionState
+  productId: string
+  hasError: boolean
+  errorCode?: TransactionErrorCode
+  errorMessage?: string
+}
+
+enum TransactionState {
+
+  // Transaction is being added to the server queue.
+  Purchasing = 0,
+
+  // Transaction is in queue, user has been charged.  Client should complete the transaction.
+  Purchased = 1,
+
+  // Transaction was cancelled or failed before being added to the server queue.
+  Failed = 2,
+
+  // Transaction was restored from user's purchase history.  Client should complete the transaction.
+  Restored = 3,
+
+  // The transaction is in the queue, but its final status is pending external action.
+  Deferred = 4,
+}
+
+enum TransactionErrorCode {
+
+  unknown = 0,
+
+  // client is not allowed to issue the request, etc.
+  clientInvalid = 1,
+
+  // user cancelled the request, etc.
+  paymentCancelled = 2,
+
+  // purchase identifier was invalid, etc.
+  paymentInvalid = 3,
+
+  // this device is not allowed to make the payment
+  paymentNotAllowed = 4,
+
+  // Product is not available in the current storefront
+  storeProductNotAvailable = 5,
+
+  // user has not allowed access to cloud service information
+  cloudServicePermissionDenied = 6,
+
+  // the device could not connect to the nework
+  cloudServiceNetworkConnectionFailed = 7,
+
+  // user has revoked permission to use this cloud service
+  cloudServiceRevoked = 8,
+
+  // The user needs to acknowledge Apple's privacy policy
+  privacyAcknowledgementRequired = 9,
+
+  // The app is attempting to use SKPayment's requestData property, but does not have the appropriate entitlement
+  unauthorizedRequestData = 10,
+
+  // The specified subscription offer identifier is not valid
+  invalidOfferIdentifier = 11,
+
+  // The cryptographic signature provided is not valid
+  invalidSignature = 12,
+
+  // One or more parameters from SKPaymentDiscount is missing
+  missingOfferParams = 13,
+
+  // The price of the selected offer is not valid (e.g. lower than the current base subscription price)
+  invalidOfferPrice = 14
 }
