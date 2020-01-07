@@ -245,21 +245,25 @@ public class JokHelper: CAPPlugin {
     var products: [SKProduct] = []
     
     @objc func loadProducts(_ call: CAPPluginCall) {
-        let identifiers = call.get("productIds", [String].self)
+        let identifiers: [String] = call.get("productIds", [String].self)!
         
         // Create a set for the product identifiers.
-        let productIdentifiers = Set<String>(identifiers!)
+        let productIdentifiers = Set<String>(identifiers)
 
         self.productsResultDelegate = ProductsResultDelegate(productsReceived: { (response) in
             
-            self.products = response.products
+            self.products = self.products.filter({ !identifiers.contains($0.productIdentifier) })
+            
+            response.products.forEach { el in
+                self.products.insert(el, at: 0)
+            }
             
             call.success([
                 "success": true,
                 "products": response.products.map({(product: SKProduct) in
                     return [
-                        "localizedDescription": product.localizedDescription,
-                        "localizedTitle": product.description,
+                        "description": product.localizedDescription,
+                        "title": product.localizedTitle,
                         "price": product.price,
                         "formattedPrice": product.formattedPrice,
                         "currencySymbol": product.priceLocale.currencySymbol!,
@@ -341,7 +345,20 @@ public class JokHelper: CAPPlugin {
         }
         
         let transactions = SKPaymentQueue.default().transactions
-        
+
+        var receipt: String = ""
+        do {
+            let receiptData = try NSData(contentsOf: Bundle.main.appStoreReceiptURL!, options: NSData.ReadingOptions.alwaysMapped)
+            
+            let base64encodedReceipt = receiptData.base64EncodedString(options: NSData.Base64EncodingOptions.endLineWithCarriageReturn)
+
+            receipt = base64encodedReceipt
+        }
+        catch {
+            print("ERROR: " + error.localizedDescription)
+        }
+
+    
         transactions.forEach { transaction in
             var errorMessage: String = ""
             var errorCode: SKError.Code?
@@ -352,10 +369,11 @@ public class JokHelper: CAPPlugin {
                 errorCode =  (transaction.error as? SKError)!.code
                 hasError = true
             }
-
+            
             NotificationCenter.default.post(name: Notification.Name("TRANSACTION_STATE_CHANGE"), object: nil, userInfo: [
                 "transactionId": transaction.transactionIdentifier,
                 "transactionState": transaction.transactionState.rawValue,
+                "transactionReceipt": receipt,
                 "productId": transaction.payment.productIdentifier,
                 "hasError": hasError,
                 "errorCode": (errorCode == nil) ? "" : errorCode!.rawValue,

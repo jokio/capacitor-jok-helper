@@ -29,8 +29,8 @@ export interface LoadProductsProps {
 }
 
 export interface SKProduct {
-  localizedDescription: string
-  localizedTitle: string
+  title: string
+  description: string
   price: number
   formattedPrice: string
   currencySymbol: string
@@ -120,13 +120,14 @@ export enum JokPluginEvents {
 export interface TransactionStateChangeData {
   transactionId: string
   transactionState: TransactionState
+  transactionReceipt: string
   productId: string
   hasError: boolean
   errorCode?: TransactionErrorCode
   errorMessage?: string
 }
 
-enum TransactionState {
+export enum TransactionState {
 
   // Transaction is being added to the server queue.
   Purchasing = 0,
@@ -144,7 +145,7 @@ enum TransactionState {
   Deferred = 4,
 }
 
-enum TransactionErrorCode {
+export enum TransactionErrorCode {
 
   unknown = 0,
 
