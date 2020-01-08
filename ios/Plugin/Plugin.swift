@@ -233,11 +233,15 @@ public class JokHelper: CAPPlugin {
     }
     
     @objc func canMakePayments(_ call: CAPPluginCall) {
-
-        call.success([
-            "value": SKPaymentQueue.canMakePayments()
-        ])
         
+        DispatchQueue.global(qos: .background).async {
+            let isAllowed = SKPaymentQueue.canMakePayments()
+            
+            call.success([
+                "value": isAllowed
+            ])
+        }
+
     }
     
     
@@ -347,15 +351,18 @@ public class JokHelper: CAPPlugin {
         let transactions = SKPaymentQueue.default().transactions
 
         var receipt: String = ""
-        do {
-            let receiptData = try NSData(contentsOf: Bundle.main.appStoreReceiptURL!, options: NSData.ReadingOptions.alwaysMapped)
-            
-            let base64encodedReceipt = receiptData.base64EncodedString(options: NSData.Base64EncodingOptions.endLineWithCarriageReturn)
 
-            receipt = base64encodedReceipt
-        }
-        catch {
-            print("ERROR: " + error.localizedDescription)
+        if (transactions.count > 0) {
+            do {
+                let receiptData = try NSData(contentsOf: Bundle.main.appStoreReceiptURL!, options: NSData.ReadingOptions.alwaysMapped)
+                
+                let base64encodedReceipt = receiptData.base64EncodedString(options: NSData.Base64EncodingOptions.endLineWithCarriageReturn)
+
+                receipt = base64encodedReceipt
+            }
+            catch {
+                print("ERROR: " + error.localizedDescription)
+            }
         }
 
     
