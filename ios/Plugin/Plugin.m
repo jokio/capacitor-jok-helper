@@ -23,5 +23,8 @@ CAP_PLUGIN(JokHelper, "JokHelper",
            CAP_PLUGIN_METHOD(requestPayment, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(finishPayment, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(listenTransactionStateChanges, CAPPluginReturnPromise);
+
+           CAP_PLUGIN_METHOD(platformInfo, CAPPluginReturnPromise);
+           CAP_PLUGIN_METHOD(viewAppPage, CAPPluginReturnPromise);
 )
 

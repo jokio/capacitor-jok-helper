@@ -392,6 +392,37 @@ public class JokHelper: CAPPlugin {
             "value": true
             ])
     }
+    
+    @objc func platformInfo(_ call: CAPPluginCall) {
+        let clientVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String
+        
+        call.success([
+            "success": true,
+            "platform": "ios",
+            "clientVersion": clientVersion ?? "",
+        ])
+    }
+    
+    @objc func viewAppPage(_ call: CAPPluginCall) {
+        
+      let appleID =  call.getString("appId")!
+      let showReviewPage =  call.getBool("showReviewPage", false)
+        
+        DispatchQueue.main.async {
+            let appStoreLink = showReviewPage ?? false
+            ? "itms-apps://itunes.apple.com/app/id\(appleID)?action=write-review"
+            : "itms-apps://itunes.apple.com/app/id\(appleID)"
+            
+            if let url = URL(string: appStoreLink),
+            UIApplication.shared.canOpenURL(url) {
+                UIApplication.shared.open(url)
+            }
+        }
+      
+        call.success([
+            "value": true
+            ])
+    }
 }
 
 public class ProductsResultDelegate: NSObject, SKProductsRequestDelegate {

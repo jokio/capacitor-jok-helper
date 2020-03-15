@@ -1,14 +1,20 @@
-declare module "@capacitor/core" {
+declare module '@capacitor/core' {
   interface PluginRegistry {
-    JokHelper: JokHelperPlugin;
+    JokHelper: JokHelperPlugin
   }
 }
 
 export interface JokHelperPlugin {
   echo(options: { value: string }): Promise<{ value: string }>
-  setKeychainItem(data: SetKeychainItemProps): Promise<{ value: string }>
-  getKeychainItem(data: GetKeychainItemProps): Promise<{ value: string }>
-  setDeviceOrientationLock(data: SetOrientationLockProps): Promise<void>
+  setKeychainItem(
+    data: SetKeychainItemProps,
+  ): Promise<{ value: string }>
+  getKeychainItem(
+    data: GetKeychainItemProps,
+  ): Promise<{ value: string }>
+  setDeviceOrientationLock(
+    data: SetOrientationLockProps,
+  ): Promise<void>
   getDeviceOrientation(): Promise<DeviceOrientationData | null>
   listenDeviceOrientationChanges(): Promise<void>
   listenPushNotificationEvents(): Promise<void>
@@ -18,10 +24,35 @@ export interface JokHelperPlugin {
   askPushNotificationsPermission(): Promise<{ accepted: boolean }>
   openAppSettings(): Promise<{ success: boolean }>
   canMakePayments(): Promise<{ value: boolean }>
-  loadProducts(data: LoadProductsProps): Promise<{ success: boolean, products: SKProduct[], invalidProducts: string[] }>
-  requestPayment(data: RequestPaymentProps): Promise<{ success: boolean, message: string }>
-  finishPayment(data: FinishPaymentProps): Promise<{ success: boolean, message: string }>
+  loadProducts(
+    data: LoadProductsProps,
+  ): Promise<{
+    success: boolean
+    products: SKProduct[]
+    invalidProducts: string[]
+  }>
+  requestPayment(
+    data: RequestPaymentProps,
+  ): Promise<{ success: boolean; message: string }>
+
+  finishPayment(
+    data: FinishPaymentProps,
+  ): Promise<{ success: boolean; message: string }>
+
   listenTransactionStateChanges(): Promise<void>
+
+  platformInfo(): Promise<{
+    success: boolean
+    platform: string
+    clientVersion: string
+  }>
+
+  viewAppPage(data: ViewAppPageProps): Promise<{ value: boolean }>
+}
+
+export interface ViewAppPageProps {
+  appId: string
+  showReviewPage: boolean
 }
 
 export interface LoadProductsProps {
@@ -81,12 +112,18 @@ export enum PushNotificationStateUserStatus {
   OSNotificationPermissionAuthorized = 2,
 
   // the application is only authorized to post Provisional notifications (direct to history)
-  OSNotificationPermissionProvisional = 3
-
+  OSNotificationPermissionProvisional = 3,
 }
 
 export interface SetOrientationLockProps {
-  orientationMask: 'all' | 'portrait' | 'portraitUpsideDown' | 'landscape' | 'landscapeLeft' | 'landscapeRight' | 'allButUpsideDown'
+  orientationMask:
+    | 'all'
+    | 'portrait'
+    | 'portraitUpsideDown'
+    | 'landscape'
+    | 'landscapeLeft'
+    | 'landscapeRight'
+    | 'allButUpsideDown'
   preferredOrientation: InterfaceOrientation
 }
 
@@ -114,7 +151,7 @@ export interface DeviceOrientationData {
 }
 
 export enum JokPluginEvents {
-  DeviceOrientationChange = 'DeviceOrientationChange'
+  DeviceOrientationChange = 'DeviceOrientationChange',
 }
 
 export interface TransactionStateChangeData {
@@ -128,7 +165,6 @@ export interface TransactionStateChangeData {
 }
 
 export enum TransactionState {
-
   // Transaction is being added to the server queue.
   Purchasing = 0,
 
@@ -146,7 +182,6 @@ export enum TransactionState {
 }
 
 export enum TransactionErrorCode {
-
   unknown = 0,
 
   // client is not allowed to issue the request, etc.
@@ -189,5 +224,5 @@ export enum TransactionErrorCode {
   missingOfferParams = 13,
 
   // The price of the selected offer is not valid (e.g. lower than the current base subscription price)
-  invalidOfferPrice = 14
+  invalidOfferPrice = 14,
 }

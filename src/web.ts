@@ -1,17 +1,27 @@
-import { WebPlugin } from '@capacitor/core';
-import { JokHelperPlugin, SetKeychainItemProps, SetOrientationLockProps, LoadProductsProps, SKProduct, RequestPaymentProps, FinishPaymentProps } from './definitions';
+import { WebPlugin } from '@capacitor/core'
+import {
+  JokHelperPlugin,
+  SetKeychainItemProps,
+  SetOrientationLockProps,
+  LoadProductsProps,
+  SKProduct,
+  RequestPaymentProps,
+  FinishPaymentProps,
+  ViewAppPageProps,
+} from './definitions'
 
-export class JokHelperWeb extends WebPlugin implements JokHelperPlugin {
+export class JokHelperWeb extends WebPlugin
+  implements JokHelperPlugin {
   constructor() {
     super({
       name: 'JokHelper',
-      platforms: ['web']
-    });
+      platforms: ['web'],
+    })
   }
 
   async echo(options: { value: string }): Promise<{ value: string }> {
-    console.log('ECHO', options);
-    return options;
+    console.log('ECHO', options)
+    return options
   }
 
   async setKeychainItem({ key, value }: SetKeychainItemProps) {
@@ -26,7 +36,9 @@ export class JokHelperWeb extends WebPlugin implements JokHelperPlugin {
     return { value }
   }
 
-  async setDeviceOrientationLock({ orientationMask }: SetOrientationLockProps) {
+  async setDeviceOrientationLock({
+    orientationMask,
+  }: SetOrientationLockProps) {
     console.log('setOrientationLock', orientationMask)
   }
 
@@ -68,7 +80,13 @@ export class JokHelperWeb extends WebPlugin implements JokHelperPlugin {
     return Promise.resolve({ value: false })
   }
 
-  loadProducts(_: LoadProductsProps): Promise<{ success: boolean, products: SKProduct[], invalidProducts: string[] }> {
+  loadProducts(
+    _: LoadProductsProps,
+  ): Promise<{
+    success: boolean
+    products: SKProduct[]
+    invalidProducts: string[]
+  }> {
     return Promise.resolve({
       success: false,
       products: [],
@@ -76,14 +94,18 @@ export class JokHelperWeb extends WebPlugin implements JokHelperPlugin {
     })
   }
 
-  requestPayment(_: RequestPaymentProps): Promise<{ success: boolean, message: string }> {
+  requestPayment(
+    _: RequestPaymentProps,
+  ): Promise<{ success: boolean; message: string }> {
     return Promise.resolve({
       success: false,
       message: '',
     })
   }
 
-  finishPayment(_: FinishPaymentProps): Promise<{ success: boolean, message: string }> {
+  finishPayment(
+    _: FinishPaymentProps,
+  ): Promise<{ success: boolean; message: string }> {
     return Promise.resolve({
       success: false,
       message: '',
@@ -93,11 +115,27 @@ export class JokHelperWeb extends WebPlugin implements JokHelperPlugin {
   listenTransactionStateChanges(): Promise<void> {
     return Promise.resolve(null)
   }
+
+  platformInfo(): Promise<{
+    success: boolean
+    platform: string
+    clientVersion: string
+  }> {
+    return Promise.resolve({
+      success: true,
+      platform: 'web',
+      clientVersion: '',
+    })
+  }
+
+  viewAppPage(_data: ViewAppPageProps): Promise<{ value: boolean }> {
+    return Promise.resolve({ value: false })
+  }
 }
 
-const JokHelper = new JokHelperWeb();
+const JokHelper = new JokHelperWeb()
 
-export { JokHelper };
+export { JokHelper }
 
-import { registerWebPlugin } from '@capacitor/core';
-registerWebPlugin(JokHelper);
+import { registerWebPlugin } from '@capacitor/core'
+registerWebPlugin(JokHelper)
