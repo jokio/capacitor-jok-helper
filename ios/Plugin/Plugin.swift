@@ -3,6 +3,7 @@ import Capacitor
 import UIKit
 import Dispatch
 import StoreKit
+import AVFoundation
 
 /**
  * Please read the Capacitor iOS Plugin Development Guide
@@ -422,6 +423,42 @@ public class JokHelper: CAPPlugin {
         call.success([
             "value": true
             ])
+    }
+    
+    var openGiftSoundEffect: AVAudioPlayer?
+    
+    var audiosCache: Dictionary<String, AVAudioPlayer> = [:]
+    
+    @objc func playAudio(_ call: CAPPluginCall) {
+        
+        let name =  call.getString("name")!
+        
+        var audioEffect = self.audiosCache[name]
+        
+        if (audioEffect == nil) {
+
+            let pathX = Bundle.main.path(forResource: name, ofType:"mp3")!
+            let url = URL(fileURLWithPath: pathX)
+
+            do {
+                audioEffect = try AVAudioPlayer(contentsOf: url)
+                audioEffect!.prepareToPlay()
+                
+                self.audiosCache[name] = audioEffect
+            } catch {
+                // couldn't load file :(
+                print(error)
+
+                self.openGiftSoundEffect = nil
+            }
+        }
+        
+        if ((audioEffect) != nil){
+            audioEffect!.play()
+        }
+        
+        call.success([ "value": true ])
+        
     }
 }
 
