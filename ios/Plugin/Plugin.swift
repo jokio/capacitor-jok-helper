@@ -161,11 +161,12 @@ public class JokHelper: CAPPlugin {
         
         NotificationCenter.default.addObserver(forName: Notification.Name("PUSH_NOTIFICATION_EVENT"), object: nil, queue: OperationQueue.main) { (notification) in
             
-            if let data = notification.userInfo
-            {
-                self.notifyListeners("appPushNotificationEvent", data: data as? [String : Any])
-            }
+            let data = notification.userInfo
+            self.notifyListeners("appPushNotificationEvent", data: data as? [String : Any])
         }
+        
+        NotificationCenter.default.post(name: Notification.Name("PUSH_NOTIFICATION_LISTENER_STARTED"), object: nil, userInfo: [:])
+
         
         call.success([
             "value": true
@@ -183,37 +184,45 @@ public class JokHelper: CAPPlugin {
 
     @objc func isMobileDevice(_ call: CAPPluginCall) {
         
-        let result = UIDevice.current.userInterfaceIdiom == .phone
+//        let result = UIDevice.current.userInterfaceIdiom == .phone
+        let result = true
 
         call.success([
             "value": result
             ])
     }
 
+     
+    var getPushNotificationsToken: NSObjectProtocol?
     @objc func getPushNotificationsState(_ call:CAPPluginCall) {
       
-        NotificationCenter.default.post(name: Notification.Name("getPushNotificationsStateRequest"), object: nil, userInfo: [:])
-
-        NotificationCenter.default.addObserver(forName: Notification.Name("getPushNotificationsStateResult"), object: nil, queue: OperationQueue.main) { (notification) in
+      self.getPushNotificationsToken = NotificationCenter.default.addObserver(forName: Notification.Name("getPushNotificationsStateResult"), object: nil, queue: OperationQueue.main) { (notification) in
             
             if let data = notification.userInfo
             {
                 call.success(data as! [String:Any])
             }
+            
+            NotificationCenter.default.removeObserver(self.getPushNotificationsToken!)
         }
 
+      NotificationCenter.default.post(name: Notification.Name("getPushNotificationsStateRequest"), object: nil, userInfo: [:])
     }
     
+    var askPermissionToken: NSObjectProtocol?
     @objc func askPushNotificationsPermission(_ call:CAPPluginCall) {
-        NotificationCenter.default.post(name: Notification.Name("askPushNotificationsPermissionRequest"), object: nil, userInfo: [:])
         
-        NotificationCenter.default.addObserver(forName: Notification.Name("askPushNotificationsPermissionResult"), object: nil, queue: OperationQueue.main) { (notification) in
+        self.askPermissionToken = NotificationCenter.default.addObserver(forName: Notification.Name("askPushNotificationsPermissionResult"), object: nil, queue: OperationQueue.main) { (notification) in
             
             if let data = notification.userInfo
             {
                 call.success(data as! [String:Any])
             }
+            
+            NotificationCenter.default.removeObserver(self.askPermissionToken!)
         }
+        
+        NotificationCenter.default.post(name: Notification.Name("askPushNotificationsPermissionRequest"), object: nil, userInfo: [:])
     }
 
     @objc func openAppSettings(_ call:CAPPluginCall) {

@@ -27,5 +27,8 @@ CAP_PLUGIN(JokHelper, "JokHelper",
            CAP_PLUGIN_METHOD(platformInfo, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(viewAppPage, CAPPluginReturnPromise);
            CAP_PLUGIN_METHOD(playAudio, CAPPluginReturnPromise);
+           
+        //    CAP_PLUGIN_METHOD(canRequestAppReview, CAPPluginReturnPromise);
+        //    CAP_PLUGIN_METHOD(requestAppReview, CAPPluginReturnPromise);
 )
 
