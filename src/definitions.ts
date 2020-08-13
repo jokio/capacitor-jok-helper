@@ -48,6 +48,7 @@ export interface JokHelperPlugin {
   }>
 
   viewAppPage(data: ViewAppPageProps): Promise<{ value: boolean }>
+  openMailbox(): Promise<{ value: boolean }>
 }
 
 export interface ViewAppPageProps {

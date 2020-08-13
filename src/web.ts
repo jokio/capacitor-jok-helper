@@ -131,6 +131,10 @@ export class JokHelperWeb extends WebPlugin
   viewAppPage(_data: ViewAppPageProps): Promise<{ value: boolean }> {
     return Promise.resolve({ value: false })
   }
+
+  openMailbox(): Promise<{ value: boolean }> {
+    return Promise.resolve({ value: false })
+  }
 }
 
 const JokHelper = new JokHelperWeb()

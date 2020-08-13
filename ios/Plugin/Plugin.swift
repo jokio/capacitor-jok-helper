@@ -469,6 +469,13 @@ public class JokHelper: CAPPlugin {
         call.success([ "value": true ])
         
     }
+    
+    @objc func openMailbox(_ call: CAPPluginCall) {
+        let mailURL = URL(string: "message://")!
+        if UIApplication.shared.canOpenURL(mailURL) {
+            UIApplication.shared.open(mailURL, options: [:], completionHandler: nil)
+        }
+    }
 }
 
 public class ProductsResultDelegate: NSObject, SKProductsRequestDelegate {

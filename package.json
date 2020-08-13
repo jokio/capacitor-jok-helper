@@ -1,6 +1,6 @@
 {
   "name": "capacitor-jok-helper",
-  "version": "0.11.0",
+  "version": "0.12.0",
   "description": "Helper functions for jok projects",
   "main": "dist/esm/index.js",
   "types": "dist/esm/index.d.ts",
