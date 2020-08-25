@@ -47,8 +47,14 @@ export interface JokHelperPlugin {
     clientVersion: string
   }>
 
+  playAudio(data: PlayAudioProps): Promise<{ value: boolean }>
+
   viewAppPage(data: ViewAppPageProps): Promise<{ value: boolean }>
   openMailbox(): Promise<{ value: boolean }>
+}
+
+export interface PlayAudioProps {
+  name: string
 }
 
 export interface ViewAppPageProps {

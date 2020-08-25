@@ -8,6 +8,7 @@ import {
   RequestPaymentProps,
   FinishPaymentProps,
   ViewAppPageProps,
+  PlayAudioProps,
 } from './definitions'
 
 export class JokHelperWeb extends WebPlugin
@@ -129,6 +130,10 @@ export class JokHelperWeb extends WebPlugin
   }
 
   viewAppPage(_data: ViewAppPageProps): Promise<{ value: boolean }> {
+    return Promise.resolve({ value: false })
+  }
+
+  playAudio(_data: PlayAudioProps): Promise<{ value: boolean }> {
     return Promise.resolve({ value: false })
   }
 

@@ -439,7 +439,7 @@ public class JokHelper: CAPPlugin {
     var audiosCache: Dictionary<String, AVAudioPlayer> = [:]
     
     @objc func playAudio(_ call: CAPPluginCall) {
-        
+
         let name =  call.getString("name")!
         
         var audioEffect = self.audiosCache[name]
