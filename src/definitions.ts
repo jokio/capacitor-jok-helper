@@ -51,6 +51,8 @@ export interface JokHelperPlugin {
 
   viewAppPage(data: ViewAppPageProps): Promise<{ value: boolean }>
   openMailbox(): Promise<{ value: boolean }>
+
+  vibrate(duration?: number): Promise<{ value: boolean }>
 }
 
 export interface PlayAudioProps {

@@ -439,7 +439,7 @@ public class JokHelper: CAPPlugin {
     var audiosCache: Dictionary<String, AVAudioPlayer> = [:]
     
     @objc func playAudio(_ call: CAPPluginCall) {
-
+        
         let name =  call.getString("name")!
         
         var audioEffect = self.audiosCache[name]
@@ -475,6 +475,14 @@ public class JokHelper: CAPPlugin {
         if UIApplication.shared.canOpenURL(mailURL) {
             UIApplication.shared.open(mailURL, options: [:], completionHandler: nil)
         }
+        
+        call.success([ "value": true ])
+    }
+    
+    @objc func vibrate(_ call: CAPPluginCall) {
+        AudioServicesPlaySystemSound(kSystemSoundID_Vibrate)
+
+        call.success([ "value": true ])
     }
 }
 

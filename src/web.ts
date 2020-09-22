@@ -11,7 +11,8 @@ import {
   PlayAudioProps,
 } from './definitions'
 
-export class JokHelperWeb extends WebPlugin
+export class JokHelperWeb
+  extends WebPlugin
   implements JokHelperPlugin {
   constructor() {
     super({
@@ -139,6 +140,16 @@ export class JokHelperWeb extends WebPlugin
 
   openMailbox(): Promise<{ value: boolean }> {
     return Promise.resolve({ value: false })
+  }
+
+  vibrate(pattern?: number | number[]): Promise<{ value: boolean }> {
+    if (!navigator || !navigator.vibrate) {
+      return Promise.resolve({ value: false })
+    }
+
+    navigator.vibrate(pattern)
+
+    return Promise.resolve({ value: true })
   }
 }
 
