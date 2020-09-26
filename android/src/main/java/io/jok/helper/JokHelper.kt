@@ -30,6 +30,16 @@ object SingletonClass {
   var publishNewTransaction: (x: Purchase) -> Any = { x ->
     transactionsObservers.forEach { it(x) }
   }
+
+  var pushNotificationsObservers = mutableListOf<(JSObject) -> Unit>()
+
+  var pendingPushNotifications = mutableListOf<JSObject>()
+
+  var publishNewPushNotification: (x: JSObject) -> Any = { x ->
+    pushNotificationsObservers.forEach { it(x) }
+  }
+
+  var getPushNotificationState: (_: Any) -> JSObject = { _ -> JSObject() }
 }
 
 
@@ -133,7 +143,13 @@ class JokHelper : Plugin() {
   @PluginMethod
   fun listenPushNotificationEvents(call: PluginCall) {
 
-    // NOT IMPLEMENTED
+    SingletonClass.pushNotificationsObservers.add { x ->
+      this.notifyListeners("appPushNotificationEvent", x)
+    }
+
+    SingletonClass.pendingPushNotifications.forEach {
+      SingletonClass.publishNewPushNotification(it)
+    }
 
     val ret = JSObject()
     ret.put("value", false)
@@ -143,20 +159,16 @@ class JokHelper : Plugin() {
   @PluginMethod
   fun getPushNotificationsState(call: PluginCall) {
 
-    // NOT IMPLEMENTED
+    var state = SingletonClass.getPushNotificationState(0)
 
-    val ret = JSObject()
-//    ret.put("value", true)
-    call.success(ret)
+    call.success(state)
   }
 
   @PluginMethod
   fun askPushNotificationsPermission(call: PluginCall) {
 
-    // NOT IMPLEMENTED
-
-    val ret = JSObject()
-//    ret.put("value", true)
+    var ret = JSObject()
+    ret.put("accepted", true)
     call.success(ret)
   }
 
@@ -238,7 +250,6 @@ class JokHelper : Plugin() {
         }
       }
     }
-
   }
 
 
@@ -407,7 +418,7 @@ class JokHelper : Plugin() {
         return
       }
 
-      audioEffect =  MediaPlayer.create(SingletonClass.activity, resourceId);
+      audioEffect = MediaPlayer.create(SingletonClass.activity, resourceId);
 
       fxEffects[name] = audioEffect
     }
