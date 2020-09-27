@@ -21,6 +21,7 @@ object SingletonClass {
   var activity: Activity? = null
   var billingClient: BillingClient? = null
   var isStoreReady: Boolean = false
+  var isStoreNotConfigured: Boolean = false
   var versionName: String = ""
   var openAppUrl: (url: Uri) -> Any = { x -> x }
   var getAudioResourceId: (name: String) -> Int = { _ -> 0 }
@@ -189,6 +190,7 @@ class JokHelper : Plugin() {
 
     val ret = JSObject()
     ret.put("value", result)
+    ret.put("isStoreNotConfigured", SingletonClass.isStoreNotConfigured)
     call.success(ret)
   }
 
@@ -198,16 +200,74 @@ class JokHelper : Plugin() {
   @PluginMethod
   fun loadProducts(call: PluginCall) {
     val productIds = call.getArray("productIds")
-    val type = call.getString("type")
+    val type = call.getString("type", "")
 
-    var skyType: String = if (type == "SUBSCRIPTION") {
-      INAPP
-    } else {
-      SUBS
+    if (type != "") {
+      var skuType: String = if (type == "SUBSCRIPTION") {
+        INAPP
+      } else {
+        SUBS
+      }
+
+      this.requestLoadProducts(productIds.toList(), skuType) { success, items ->
+        val ret = JSObject()
+        ret.put("success", success)
+        ret.put("products", JSArray(items))
+        ret.put("invalidProducts", JSArray())
+        call.success(ret)
+      }
+
+      return
     }
 
+    var productsByType = productIds.toList<String>().groupBy {
+      if (it.contains("membership")) {
+        SUBS
+      } else {
+        INAPP
+      }
+    }
+
+    var responseCount = 0
+    var needResponseCount = productsByType.keys.size
+    var tempResult = emptyArray<JSObject>()
+
+
+    if (productsByType.keys.contains(SUBS) && productsByType[SUBS]!!.isNotEmpty()) {
+      this.requestLoadProducts(productsByType.get(SUBS)!!, SUBS) { success, res ->
+        tempResult = tempResult.plus(res)
+        responseCount++
+
+        if (responseCount >= needResponseCount) {
+          val ret = JSObject()
+          ret.put("success", success)
+          ret.put("products", JSArray(tempResult))
+          ret.put("invalidProducts", JSArray())
+          call.success(ret)
+        }
+      }
+    }
+
+    if (productsByType.keys.contains(INAPP) && productsByType[INAPP]!!.isNotEmpty()) {
+      this.requestLoadProducts(productsByType.get(INAPP)!!, INAPP) { success, res ->
+        tempResult = tempResult.plus(res)
+        responseCount++
+
+        if (responseCount >= needResponseCount) {
+          val ret = JSObject()
+          ret.put("success", success)
+          ret.put("products", JSArray(tempResult))
+          ret.put("invalidProducts", JSArray())
+          call.success(ret)
+        }
+      }
+    }
+  }
+
+  private fun requestLoadProducts(productIds: List<String>, skuType: String, cb: (success: Boolean, res: List<JSObject>) -> Any) {
+
     val params = SkuDetailsParams.newBuilder()
-    params.setSkusList(productIds.toList()).setType(skyType)
+    params.setSkusList(productIds.toList()).setType(skuType)
 
     if (SingletonClass.billingClient != null) {
       SingletonClass.billingClient?.querySkuDetailsAsync(params.build()) { billingResult, skuDetailsList ->
@@ -231,27 +291,18 @@ class JokHelper : Plugin() {
               res.put("downloadContentVersion", "")
 
               res
-            }
+            } ?: emptyList()
 
-
-            val ret = JSObject()
-            ret.put("success", true)
-            ret.put("products", JSArray(items))
-            ret.put("invalidProducts", JSArray())
-            call.success(ret)
+            cb(true, items)
           }
           else -> {
-            val ret = JSObject()
-            ret.put("success", false)
-            ret.put("products", JSArray())
-            ret.put("invalidProducts", JSArray())
-            call.success(ret)
+            cb(false, emptyList())
           }
         }
       }
     }
-  }
 
+  }
 
   @PluginMethod
   fun requestPayment(call: PluginCall) {
