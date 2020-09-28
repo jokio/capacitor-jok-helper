@@ -9,8 +9,8 @@ import android.net.Uri
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
+import android.provider.Settings
 import android.util.DisplayMetrics
-import androidx.core.content.ContextCompat.startActivity
 import com.android.billingclient.api.*
 import com.android.billingclient.api.BillingClient.SkuType.INAPP
 import com.android.billingclient.api.BillingClient.SkuType.SUBS
@@ -168,6 +168,15 @@ class JokHelper : Plugin() {
   @PluginMethod
   fun askPushNotificationsPermission(call: PluginCall) {
 
+    // open app settings
+    val intent = Intent()
+    intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+
+    val uri = Uri.fromParts("package", SingletonClass.activity?.packageName, null)
+    intent.data = uri
+    context.startActivity(intent)
+    // open app settings
+
     var ret = JSObject()
     ret.put("accepted", true)
     call.success(ret)
@@ -176,7 +185,12 @@ class JokHelper : Plugin() {
   @PluginMethod
   fun openAppSettings(call: PluginCall) {
 
-    // NOT IMPLEMENTED
+    val intent = Intent()
+    intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
+
+    val uri = Uri.fromParts("package", SingletonClass.activity?.packageName, null)
+    intent.data = uri
+    context.startActivity(intent)
 
     val ret = JSObject()
     ret.put("success", false)
