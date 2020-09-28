@@ -24,7 +24,7 @@ object SingletonClass {
   var isStoreNotConfigured: Boolean = false
   var versionName: String = ""
   var openAppUrl: (url: Uri) -> Any = { x -> x }
-  var getAudioResourceId: (name: String) -> Int = { _ -> 0 }
+  var getAudioEffect: (name: String) -> MediaPlayer? = { _ -> null }
 
   val transactionsObservers = mutableListOf<(Purchase) -> Unit>()
 
@@ -460,21 +460,20 @@ class JokHelper : Plugin() {
     var audioEffect = fxEffects[name]
 
     if (audioEffect == null) {
-      val resourceId = SingletonClass.getAudioResourceId(name)
-
-      if (resourceId == 0) {
+      audioEffect = SingletonClass.getAudioEffect(name)
+      if (audioEffect == null) {
         val ret = JSObject()
         ret.put("value", false)
         call.success(ret)
         return
       }
 
-      audioEffect = MediaPlayer.create(SingletonClass.activity, resourceId);
-
       fxEffects[name] = audioEffect
     }
 
-    audioEffect?.stop();
+    if (audioEffect?.isPlaying) {
+      audioEffect?.stop();
+    }
     audioEffect?.start()
 
     val ret = JSObject()
@@ -501,9 +500,9 @@ class JokHelper : Plugin() {
 
     val vibrator = SingletonClass.activity?.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
     if (Build.VERSION.SDK_INT >= 26) {
-      vibrator.vibrate(VibrationEffect.createOneShot(200, VibrationEffect.DEFAULT_AMPLITUDE))
+      vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
     } else {
-      vibrator.vibrate(200)
+      vibrator.vibrate(500)
     }
 
     val ret = JSObject()
