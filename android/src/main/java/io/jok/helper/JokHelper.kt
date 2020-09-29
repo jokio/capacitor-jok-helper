@@ -86,15 +86,6 @@ class JokHelper : Plugin() {
   }
 
   @PluginMethod
-  fun isMobileDevice(call: PluginCall) {
-    var result = true
-
-    val ret = JSObject()
-    ret.put("value", result)
-    call.success(ret)
-  }
-
-  @PluginMethod
   fun isWideScreen(call: PluginCall) {
     var metrics = DisplayMetrics()
 
@@ -351,7 +342,7 @@ class JokHelper : Plugin() {
     val transactionId = call.getString("transactionId")
 
     var consumablePurchases = SingletonClass.billingClient?.queryPurchases(INAPP)
-    var purchase = consumablePurchases?.purchasesList?.find { it.orderId === transactionId }
+    var purchase = consumablePurchases?.purchasesList?.find { it.purchaseToken === transactionId }
     if (purchase !== null) {
       val consumeParams =
         ConsumeParams.newBuilder()
@@ -375,7 +366,7 @@ class JokHelper : Plugin() {
     }
 
     var subscriptionPurchases = SingletonClass.billingClient?.queryPurchases(SUBS)
-    purchase = subscriptionPurchases?.purchasesList?.find { it.orderId === transactionId }
+    purchase = subscriptionPurchases?.purchasesList?.find { it.purchaseToken === transactionId }
 
     if (purchase !== null) {
 
@@ -417,9 +408,9 @@ class JokHelper : Plugin() {
 
     SingletonClass.transactionsObservers.add() { x ->
       val ret = JSObject()
-      ret.put("transactionId", x.orderId)
+      ret.put("transactionId", x.purchaseToken)
       ret.put("transactionState", x.purchaseState)
-      ret.put("transactionReceipt", x.purchaseToken)
+      ret.put("transactionReceipt", x.originalJson)
       ret.put("productId", x.sku)
       ret.put("platform", "ANDROID")
       ret.put("hasError", false)
@@ -445,6 +436,8 @@ class JokHelper : Plugin() {
     val ret = JSObject()
     ret.put("success", true)
     ret.put("platform", "ANDROID")
+    ret.put("packageName", SingletonClass.activity!!.packageName)
+    ret.put("isMobileApp", true)
     ret.put("clientVersion", clientVersion)
     call.success(ret)
   }

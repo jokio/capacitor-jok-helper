@@ -181,17 +181,6 @@ public class JokHelper: CAPPlugin {
             "value": result
             ])
     }
-
-    @objc func isMobileDevice(_ call: CAPPluginCall) {
-        
-//        let result = UIDevice.current.userInterfaceIdiom == .phone
-        let result = true
-
-        call.success([
-            "value": result
-            ])
-    }
-
      
     var getPushNotificationsToken: NSObjectProtocol?
     @objc func getPushNotificationsState(_ call:CAPPluginCall) {
@@ -408,7 +397,9 @@ public class JokHelper: CAPPlugin {
         
         call.success([
             "success": true,
-            "platform": "ios",
+            "platform": "IOS",
+            "packageName": Bundle.main.bundleIdentifier,
+            "isMobileApp": true,
             "clientVersion": clientVersion ?? "",
         ])
     }
