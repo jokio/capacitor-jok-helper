@@ -58,9 +58,9 @@ class JokHelper : Plugin() {
   fun setKeychainItem(call: PluginCall) {
     val key = call.getString("key")
     val value = call.getString("value")
-    val accessGroup = call.getString("accessGroup")
+//    val accessGroup = call.getString("accessGroup")
 
-    var pref = SingletonClass.activity?.getPreferences(Context.MODE_PRIVATE)
+    val pref = SingletonClass.activity?.getPreferences(Context.MODE_PRIVATE)
     if (pref != null) {
       with(pref.edit()) {
         putString(key, value)
@@ -77,8 +77,8 @@ class JokHelper : Plugin() {
   fun getKeychainItem(call: PluginCall) {
     val key = call.getString("key")
 
-    var pref = SingletonClass.activity?.getPreferences(Context.MODE_PRIVATE)
-    var result = pref?.getString(key, null)
+    val pref = SingletonClass.activity?.getPreferences(Context.MODE_PRIVATE)
+    val result = pref?.getString(key, null)
 
     val ret = JSObject()
     ret.put("value", result)
@@ -87,11 +87,11 @@ class JokHelper : Plugin() {
 
   @PluginMethod
   fun isWideScreen(call: PluginCall) {
-    var metrics = DisplayMetrics()
+    val metrics = DisplayMetrics()
 
     SingletonClass.activity?.windowManager?.defaultDisplay?.getMetrics(metrics)
 
-    var result = metrics.heightPixels >= 812
+    val result = metrics.heightPixels >= 812
 
     val ret = JSObject()
     ret.put("value", result)
@@ -151,7 +151,7 @@ class JokHelper : Plugin() {
   @PluginMethod
   fun getPushNotificationsState(call: PluginCall) {
 
-    var state = SingletonClass.getPushNotificationState(0)
+    val state = SingletonClass.getPushNotificationState(0)
 
     call.success(state)
   }
@@ -168,7 +168,7 @@ class JokHelper : Plugin() {
     context.startActivity(intent)
     // open app settings
 
-    var ret = JSObject()
+    val ret = JSObject()
     ret.put("accepted", true)
     call.success(ret)
   }
@@ -191,7 +191,7 @@ class JokHelper : Plugin() {
   @PluginMethod
   fun canMakePayments(call: PluginCall) {
 
-    var result = SingletonClass.isStoreReady
+    val result = SingletonClass.isStoreReady
 
     val ret = JSObject()
     ret.put("value", result)
@@ -200,7 +200,7 @@ class JokHelper : Plugin() {
   }
 
 
-  var productsCache: List<SkuDetails>? = null
+  private var productsCache: List<SkuDetails>? = null
 
   @PluginMethod
   fun loadProducts(call: PluginCall) {
@@ -208,7 +208,7 @@ class JokHelper : Plugin() {
     val type = call.getString("type", "")
 
     if (type != "") {
-      var skuType: String = if (type == "SUBSCRIPTION") {
+      val skuType: String = if (type == "SUBSCRIPTION") {
         INAPP
       } else {
         SUBS
@@ -225,7 +225,7 @@ class JokHelper : Plugin() {
       return
     }
 
-    var productsByType = productIds.toList<String>().groupBy {
+    val productsByType = productIds.toList<String>().groupBy {
       if (it.contains("membership")) {
         SUBS
       } else {
@@ -234,12 +234,12 @@ class JokHelper : Plugin() {
     }
 
     var responseCount = 0
-    var needResponseCount = productsByType.keys.size
+    val needResponseCount = productsByType.keys.size
     var tempResult = emptyArray<JSObject>()
 
 
     if (productsByType.keys.contains(SUBS) && productsByType[SUBS]!!.isNotEmpty()) {
-      this.requestLoadProducts(productsByType.get(SUBS)!!, SUBS) { success, res ->
+      this.requestLoadProducts(productsByType[SUBS]!!, SUBS) { success, res ->
         tempResult = tempResult.plus(res)
         responseCount++
 
@@ -254,7 +254,7 @@ class JokHelper : Plugin() {
     }
 
     if (productsByType.keys.contains(INAPP) && productsByType[INAPP]!!.isNotEmpty()) {
-      this.requestLoadProducts(productsByType.get(INAPP)!!, INAPP) { success, res ->
+      this.requestLoadProducts(productsByType[INAPP]!!, INAPP) { success, res ->
         tempResult = tempResult.plus(res)
         responseCount++
 
@@ -281,8 +281,8 @@ class JokHelper : Plugin() {
 
             this.productsCache = skuDetailsList
 
-            var items = skuDetailsList?.map { x ->
-              var res = JSObject()
+            val items = skuDetailsList?.map { x ->
+              val res = JSObject()
               res.put("title", x.title)
               res.put("description", x.description)
               res.put("price", x.originalPrice)
@@ -318,7 +318,7 @@ class JokHelper : Plugin() {
       return
     }
 
-    var product = this.productsCache?.find { it.sku === productId }
+    val product = this.productsCache?.find { it.sku === productId }
     if (product == null) {
       call.reject("PRODUCT_NOT_FOUND")
       return
@@ -341,7 +341,7 @@ class JokHelper : Plugin() {
   fun finishPayment(call: PluginCall) {
     val transactionId = call.getString("transactionId")
 
-    var consumablePurchases = SingletonClass.billingClient?.queryPurchases(INAPP)
+    val consumablePurchases = SingletonClass.billingClient?.queryPurchases(INAPP)
     var purchase = consumablePurchases?.purchasesList?.find { it.purchaseToken === transactionId }
     if (purchase !== null) {
       val consumeParams =
@@ -365,7 +365,7 @@ class JokHelper : Plugin() {
       return
     }
 
-    var subscriptionPurchases = SingletonClass.billingClient?.queryPurchases(SUBS)
+    val subscriptionPurchases = SingletonClass.billingClient?.queryPurchases(SUBS)
     purchase = subscriptionPurchases?.purchasesList?.find { it.purchaseToken === transactionId }
 
     if (purchase !== null) {
@@ -406,7 +406,7 @@ class JokHelper : Plugin() {
   @PluginMethod
   fun listenTransactionStateChanges(call: PluginCall) {
 
-    SingletonClass.transactionsObservers.add() { x ->
+    SingletonClass.transactionsObservers.add { x ->
       val ret = JSObject()
       ret.put("transactionId", x.purchaseToken)
       ret.put("transactionState", x.purchaseState)
@@ -421,8 +421,8 @@ class JokHelper : Plugin() {
       this.notifyListeners("TransactionStateChange", ret)
     }
 
-    var consumablePurchases = SingletonClass.billingClient?.queryPurchases(INAPP)
-    var subscriptionPurchases = SingletonClass.billingClient?.queryPurchases(SUBS)
+    val consumablePurchases = SingletonClass.billingClient?.queryPurchases(INAPP)
+    val subscriptionPurchases = SingletonClass.billingClient?.queryPurchases(SUBS)
 
     consumablePurchases?.purchasesList?.forEach { SingletonClass.publishNewTransaction(it) }
     subscriptionPurchases?.purchasesList?.forEach { SingletonClass.publishNewTransaction(it) }
@@ -431,7 +431,7 @@ class JokHelper : Plugin() {
   @PluginMethod
   fun platformInfo(call: PluginCall) {
 
-    var clientVersion = SingletonClass.versionName
+    val clientVersion = SingletonClass.versionName
 
     val ret = JSObject()
     ret.put("success", true)
@@ -444,8 +444,8 @@ class JokHelper : Plugin() {
 
   @PluginMethod
   fun viewAppPage(call: PluginCall) {
-    var appId = call.getString("appId")
-    var showReviewPage = call.getBoolean("showReviewPage", false)
+    val appId = call.getString("appId")
+//    var showReviewPage = call.getBoolean("showReviewPage", false)
 
     try {
       SingletonClass.openAppUrl(Uri.parse("market://details?id=$appId"))
@@ -462,7 +462,7 @@ class JokHelper : Plugin() {
 
   @PluginMethod
   fun playAudio(call: PluginCall) {
-    var name = call.getString("name")
+    val name = call.getString("name")
 
     var audioEffect = fxEffects[name]
 
@@ -478,10 +478,10 @@ class JokHelper : Plugin() {
       fxEffects[name] = audioEffect
     }
 
-    if (audioEffect?.isPlaying) {
-      audioEffect?.stop();
+    if (audioEffect.isPlaying) {
+      audioEffect.stop()
     }
-    audioEffect?.start()
+    audioEffect.start()
 
     val ret = JSObject()
     ret.put("value", true)
