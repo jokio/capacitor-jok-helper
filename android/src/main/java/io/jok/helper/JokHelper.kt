@@ -11,20 +11,25 @@ import android.os.VibrationEffect
 import android.os.Vibrator
 import android.provider.Settings
 import android.util.DisplayMetrics
+import android.util.Log
 import com.android.billingclient.api.*
+import com.android.billingclient.api.BillingClient.BillingResponseCode
 import com.android.billingclient.api.BillingClient.SkuType.INAPP
 import com.android.billingclient.api.BillingClient.SkuType.SUBS
 import com.getcapacitor.*
 
 
-object SingletonClass {
+object JokHelperStatic {
   var activity: Activity? = null
-  var billingClient: BillingClient? = null
   var isStoreReady: Boolean = false
+  var isStoreDisconnected: Boolean = false
   var isStoreNotConfigured: Boolean = false
   var versionName: String = ""
   var openAppUrl: (url: Uri) -> Any = { x -> x }
   var getAudioEffect: (name: String) -> MediaPlayer? = { _ -> null }
+  var onConnection: (onSuccess: () -> Any) -> BillingClientStateListener = { _ -> null as BillingClientStateListener }
+
+  var billingRepo: BillingRepo? = null
 
   val transactionsObservers = mutableListOf<(Purchase) -> Unit>()
 
@@ -41,8 +46,156 @@ object SingletonClass {
   }
 
   var getPushNotificationState: (_: Any) -> JSObject = { _ -> JSObject() }
+
+
+  fun init() {
+    onConnection = { onSuccess: () -> Any ->
+      object : BillingClientStateListener {
+        override fun onBillingSetupFinished(billingResult: BillingResult) {
+          Log.w("BILLING", "onBillingSetupFinished: " + billingResult.debugMessage)
+          if (billingResult.responseCode == BillingResponseCode.OK) {
+            // The BillingClient is ready. You can query purchases here.
+            isStoreReady = true
+            isStoreDisconnected = false
+
+            if (onSuccess != null) {
+              onSuccess()
+            }
+          }
+
+          if (billingResult.responseCode == BillingResponseCode.BILLING_UNAVAILABLE) {
+            isStoreNotConfigured = true
+          }
+        }
+
+        override fun onBillingServiceDisconnected() {
+          // Try to restart the connection on the next request to
+          // Google Play by calling the startConnection() method.
+          isStoreReady = false
+          isStoreDisconnected = true
+        }
+      }
+    }
+
+    billingRepo = BillingRepo()
+    this.createBillingClient(true) {}
+  }
+
+  fun purchaseUpdatedListener(billingResult: BillingResult, purchases: MutableList<Purchase>?) {
+    // To be implemented in a later section.
+    if (billingResult.responseCode == BillingResponseCode.OK) {
+      purchases?.forEach { publishNewTransaction(it) }
+    }
+  }
+
+  fun createBillingClient(reconnect: Boolean, onSuccess: () -> Any) {
+    billingRepo?.onSuccess = onSuccess
+
+    if (reconnect) {
+      billingRepo?.connect()
+    }
+  }
+
+  fun destroy() {
+    billingRepo?.disconnect()
+  }
+
+  fun finishTransaction(transactionId: String, cb: (success: Boolean, shouldRetry: Boolean, errorMessage: String?) -> Any) {
+    val consumablePurchases = billingRepo?.billingClient?.queryPurchases(INAPP)
+    var purchase = consumablePurchases?.purchasesList?.find { it.purchaseToken == transactionId }
+    if (purchase !== null) {
+      val consumeParams =
+        ConsumeParams.newBuilder()
+          .setPurchaseToken(purchase.purchaseToken)
+          .build()
+
+      billingRepo?.billingClient?.consumeAsync(consumeParams) { billingResult, _ ->
+        if (billingResult.responseCode == BillingResponseCode.OK) {
+          cb(true, false, null)
+        } else {
+          val shouldRetry = billingResult.responseCode == BillingResponseCode.SERVICE_DISCONNECTED || billingResult.responseCode == BillingResponseCode.SERVICE_TIMEOUT
+
+          cb(false, shouldRetry, billingResult.responseCode.toString())
+        }
+      }
+
+      return
+    }
+
+    val subscriptionPurchases = billingRepo?.billingClient?.queryPurchases(SUBS)
+    purchase = subscriptionPurchases?.purchasesList?.find { it.purchaseToken == transactionId }
+
+    if (purchase !== null) {
+
+      if (purchase.isAcknowledged) {
+        cb(true, false, null)
+        return
+      }
+
+      val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder()
+        .setPurchaseToken(purchase.purchaseToken)
+
+      billingRepo?.billingClient?.acknowledgePurchase(acknowledgePurchaseParams.build()) { billingResult ->
+
+        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+          cb(true, false, null)
+        } else {
+          val shouldRetry = billingResult.responseCode == BillingResponseCode.SERVICE_DISCONNECTED || billingResult.responseCode == BillingResponseCode.SERVICE_TIMEOUT
+
+          cb(false, shouldRetry, billingResult.debugMessage)
+        }
+      }
+
+      return
+    }
+
+    cb(false, true, "Order not found")
+  }
 }
 
+class BillingRepo : BillingClientStateListener {
+  var billingClient: BillingClient
+  var onSuccess: () -> Any = {}
+
+  init {
+    billingClient = BillingClient.newBuilder(JokHelperStatic.activity!!)
+      .setListener { p0, p1 -> JokHelperStatic.purchaseUpdatedListener(p0, p1) }
+      .enablePendingPurchases()
+      .build()
+  }
+
+  fun connect() {
+    billingClient.startConnection(this)
+  }
+
+  fun disconnect() {
+    billingClient.endConnection()
+  }
+
+  override fun onBillingSetupFinished(res: BillingResult) {
+    Log.w("BILLING", "onBillingSetupFinished: " + res.debugMessage)
+    if (res.responseCode == BillingResponseCode.OK) {
+      // The BillingClient is ready. You can query purchases here.
+      JokHelperStatic.isStoreReady = true
+      JokHelperStatic.isStoreDisconnected = false
+
+      if (onSuccess != null) {
+        onSuccess()
+      }
+    }
+
+    if (res.responseCode == BillingResponseCode.BILLING_UNAVAILABLE) {
+      JokHelperStatic.isStoreNotConfigured = true
+    }
+  }
+
+  override fun onBillingServiceDisconnected() {
+    // Try to restart the connection on the next request to
+    // Google Play by calling the startConnection() method.
+    JokHelperStatic.isStoreReady = false
+    JokHelperStatic.isStoreDisconnected = true
+  }
+}
 
 @NativePlugin
 class JokHelper : Plugin() {
@@ -60,7 +213,7 @@ class JokHelper : Plugin() {
     val value = call.getString("value")
 //    val accessGroup = call.getString("accessGroup")
 
-    val pref = SingletonClass.activity?.getPreferences(Context.MODE_PRIVATE)
+    val pref = JokHelperStatic.activity?.getPreferences(Context.MODE_PRIVATE)
     if (pref != null) {
       with(pref.edit()) {
         putString(key, value)
@@ -77,7 +230,7 @@ class JokHelper : Plugin() {
   fun getKeychainItem(call: PluginCall) {
     val key = call.getString("key")
 
-    val pref = SingletonClass.activity?.getPreferences(Context.MODE_PRIVATE)
+    val pref = JokHelperStatic.activity?.getPreferences(Context.MODE_PRIVATE)
     val result = pref?.getString(key, null)
 
     val ret = JSObject()
@@ -89,7 +242,7 @@ class JokHelper : Plugin() {
   fun isWideScreen(call: PluginCall) {
     val metrics = DisplayMetrics()
 
-    SingletonClass.activity?.windowManager?.defaultDisplay?.getMetrics(metrics)
+    JokHelperStatic.activity?.windowManager?.defaultDisplay?.getMetrics(metrics)
 
     val result = metrics.heightPixels >= 812
 
@@ -135,12 +288,12 @@ class JokHelper : Plugin() {
   @PluginMethod
   fun listenPushNotificationEvents(call: PluginCall) {
 
-    SingletonClass.pushNotificationsObservers.add { x ->
+    JokHelperStatic.pushNotificationsObservers.add { x ->
       this.notifyListeners("appPushNotificationEvent", x)
     }
 
-    SingletonClass.pendingPushNotifications.forEach {
-      SingletonClass.publishNewPushNotification(it)
+    JokHelperStatic.pendingPushNotifications.forEach {
+      JokHelperStatic.publishNewPushNotification(it)
     }
 
     val ret = JSObject()
@@ -151,7 +304,7 @@ class JokHelper : Plugin() {
   @PluginMethod
   fun getPushNotificationsState(call: PluginCall) {
 
-    val state = SingletonClass.getPushNotificationState(0)
+    val state = JokHelperStatic.getPushNotificationState(0)
 
     call.success(state)
   }
@@ -163,7 +316,7 @@ class JokHelper : Plugin() {
     val intent = Intent()
     intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
 
-    val uri = Uri.fromParts("package", SingletonClass.activity?.packageName, null)
+    val uri = Uri.fromParts("package", JokHelperStatic.activity?.packageName, null)
     intent.data = uri
     context.startActivity(intent)
     // open app settings
@@ -179,7 +332,7 @@ class JokHelper : Plugin() {
     val intent = Intent()
     intent.action = Settings.ACTION_APPLICATION_DETAILS_SETTINGS
 
-    val uri = Uri.fromParts("package", SingletonClass.activity?.packageName, null)
+    val uri = Uri.fromParts("package", JokHelperStatic.activity?.packageName, null)
     intent.data = uri
     context.startActivity(intent)
 
@@ -191,21 +344,23 @@ class JokHelper : Plugin() {
   @PluginMethod
   fun canMakePayments(call: PluginCall) {
 
-    val result = SingletonClass.isStoreReady
+    val result = JokHelperStatic.isStoreReady
 
     val ret = JSObject()
     ret.put("value", result)
-    ret.put("isStoreNotConfigured", SingletonClass.isStoreNotConfigured)
+    ret.put("isStoreNotConfigured", JokHelperStatic.isStoreNotConfigured)
     call.success(ret)
   }
 
 
-  private var productsCache: List<SkuDetails>? = null
+  private var productsCache: Array<SkuDetails> = emptyArray()
 
   @PluginMethod
   fun loadProducts(call: PluginCall) {
     val productIds = call.getArray("productIds")
     val type = call.getString("type", "")
+
+    Log.i("BILLING", "loadProducts requested items: ${productIds.length()}")
 
     if (type != "") {
       val skuType: String = if (type == "SUBSCRIPTION") {
@@ -215,6 +370,8 @@ class JokHelper : Plugin() {
       }
 
       this.requestLoadProducts(productIds.toList(), skuType) { success, items ->
+        Log.i("BILLING", "loadProducts finished, loaded: ${items.size}")
+
         val ret = JSObject()
         ret.put("success", success)
         ret.put("products", JSArray(items))
@@ -240,6 +397,8 @@ class JokHelper : Plugin() {
 
     if (productsByType.keys.contains(SUBS) && productsByType[SUBS]!!.isNotEmpty()) {
       this.requestLoadProducts(productsByType[SUBS]!!, SUBS) { success, res ->
+        Log.i("BILLING", "loadProducts finished, loaded: ${res.size}")
+
         tempResult = tempResult.plus(res)
         responseCount++
 
@@ -255,6 +414,8 @@ class JokHelper : Plugin() {
 
     if (productsByType.keys.contains(INAPP) && productsByType[INAPP]!!.isNotEmpty()) {
       this.requestLoadProducts(productsByType[INAPP]!!, INAPP) { success, res ->
+        Log.i("BILLING", "loadProducts finished, loaded: ${res.size}")
+
         tempResult = tempResult.plus(res)
         responseCount++
 
@@ -274,16 +435,25 @@ class JokHelper : Plugin() {
     val params = SkuDetailsParams.newBuilder()
     params.setSkusList(productIds.toList()).setType(skuType)
 
-    if (SingletonClass.billingClient != null) {
-      SingletonClass.billingClient?.querySkuDetailsAsync(params.build()) { billingResult, skuDetailsList ->
+    if (JokHelperStatic.billingRepo?.billingClient != null) {
+      JokHelperStatic.billingRepo?.billingClient?.querySkuDetailsAsync(params.build()) { billingResult, skuDetailsList ->
+        Log.i("billingProducts", skuDetailsList?.size?.toString() ?: "")
+
         when (billingResult.responseCode) {
           BillingClient.BillingResponseCode.OK -> {
 
-            this.productsCache = skuDetailsList
+            if (skuDetailsList != null) {
+              this.productsCache = this.productsCache.plus(skuDetailsList)
+            }
 
             val items = skuDetailsList?.map { x ->
               val res = JSObject()
-              res.put("title", x.title)
+              res.put("title", when (x.sku) {
+                "io.jok.vip_membership_1_month" -> "Month"
+                "io.jok.vip_membership_6_month" -> "6 Months"
+                else -> x.title
+              })
+              res.put("originalTitle", x.title)
               res.put("description", x.description)
               res.put("price", x.originalPrice)
               res.put("formattedPrice", x.price)
@@ -301,115 +471,127 @@ class JokHelper : Plugin() {
             cb(true, items)
           }
           else -> {
+            Log.w("InvalidBillingResponse", billingResult.responseCode.toString())
             cb(false, emptyList())
           }
         }
       }
     }
-
   }
 
   @PluginMethod
   fun requestPayment(call: PluginCall) {
     val productId = call.getString("productId")
 
-    if (this.productsCache == null) {
+    Log.i("BILLING", "requestPayment starting...")
+
+    if (this.productsCache.isEmpty()) {
       call.reject("PRODUCTS_NOT_LOADED")
       return
     }
 
-    val product = this.productsCache?.find { it.sku === productId }
-    if (product == null) {
-      call.reject("PRODUCT_NOT_FOUND")
+    if (JokHelperStatic.billingRepo?.billingClient?.isReady == true) {
+      var responseCode = initRequestPayment(productId)
+
+      Log.i("BILLING", "requestPayment finished 1")
+
+      val ret = JSObject()
+      ret.put("success", true)
+      ret.put("platform", "ANDROID")
+      ret.put("responseCode", responseCode)
+      call.success(ret)
       return
+    }
+
+
+    JokHelperStatic.createBillingClient(true) {
+      var responseCode = initRequestPayment(productId)
+
+      Log.i("BILLING", "requestPayment finished 2")
+
+      val ret = JSObject()
+      ret.put("success", true)
+      ret.put("platform", "ANDROID")
+      ret.put("responseCode", responseCode)
+      call.success(ret)
+    }
+
+  }
+
+  private fun initRequestPayment(productId: String): Int? {
+    val product = this.productsCache?.find { it.sku == productId }
+    if (product == null) return null
+
+    if (JokHelperStatic.billingRepo?.billingClient?.isReady == true) {
     }
 
     val flowParams = BillingFlowParams.newBuilder()
       .setSkuDetails(product)
       .build()
 
-    val responseCode = SingletonClass.billingClient?.launchBillingFlow(SingletonClass.activity!!, flowParams)?.responseCode
-
-    val ret = JSObject()
-    ret.put("success", true)
-    ret.put("platform", "ANDROID")
-    ret.put("responseCode", responseCode)
-    call.success(ret)
+    return JokHelperStatic.billingRepo?.billingClient?.launchBillingFlow(JokHelperStatic.activity!!, flowParams)?.responseCode
   }
 
   @PluginMethod
   fun finishPayment(call: PluginCall) {
     val transactionId = call.getString("transactionId")
 
-    val consumablePurchases = SingletonClass.billingClient?.queryPurchases(INAPP)
-    var purchase = consumablePurchases?.purchasesList?.find { it.purchaseToken === transactionId }
-    if (purchase !== null) {
-      val consumeParams =
-        ConsumeParams.newBuilder()
-          .setPurchaseToken(purchase.purchaseToken)
-          .build()
+    Log.i("BILLING", "finishPayment starting...")
 
-      SingletonClass.billingClient?.consumeAsync(consumeParams) { billingResult, _ ->
-        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-          val ret = JSObject()
-          ret.put("success", true)
-          call.success(ret)
+    finishPaymentWrapper(transactionId, 0) { isSuccess, errorMessage ->
+      val ret = JSObject()
+      ret.put("success", isSuccess)
+      ret.put("message", errorMessage)
+      call.success(ret)
+    }
+  }
+
+  private fun finishPaymentWrapper(transactionId: String, attemptsCount: Int, cb: (success: Boolean, errorMessage: String?) -> Any) {
+
+    if (JokHelperStatic.billingRepo?.billingClient?.isReady == true) {
+      JokHelperStatic.finishTransaction(transactionId) { isSuccess, shouldRetry, errorMessage ->
+        if (shouldRetry && (attemptsCount < 5)) {
+          finishPaymentWrapper(transactionId, attemptsCount + 1, cb)
+          false
         } else {
-          val ret = JSObject()
-          ret.put("success", false)
-          ret.put("message", billingResult.debugMessage)
-          call.success(ret)
+          Log.i("BILLING", "finishPayment finished 1 $isSuccess, $errorMessage")
+
+          cb(isSuccess, errorMessage)
+
+          true
         }
       }
-
       return
     }
 
-    val subscriptionPurchases = SingletonClass.billingClient?.queryPurchases(SUBS)
-    purchase = subscriptionPurchases?.purchasesList?.find { it.purchaseToken === transactionId }
+    JokHelperStatic.createBillingClient(true) {
+      JokHelperStatic.finishTransaction(transactionId) { isSuccess, shouldRetry, errorMessage ->
 
-    if (purchase !== null) {
+        Log.i("BILLING", "finishPayment finished 2 $isSuccess, $errorMessage")
 
-      if (purchase.isAcknowledged) {
-        val ret = JSObject()
-        ret.put("success", true)
-        call.success(ret)
-      }
-
-      val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder()
-        .setPurchaseToken(purchase.purchaseToken)
-
-      SingletonClass.billingClient?.acknowledgePurchase(acknowledgePurchaseParams.build()) { billingResult ->
-
-        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-          val ret = JSObject()
-          ret.put("success", true)
-          call.success(ret)
+        if (shouldRetry && (attemptsCount < 5)) {
+          finishPaymentWrapper(transactionId, attemptsCount + 1, cb)
+          false
         } else {
-          val ret = JSObject()
-          ret.put("success", false)
-          ret.put("message", billingResult.debugMessage)
-          call.success(ret)
+          cb(isSuccess, errorMessage)
+
+          true
         }
       }
-
-      return
     }
-
-
-    val ret = JSObject()
-    ret.put("success", false)
-    ret.put("message", "Order not found")
-    call.success(ret)
   }
 
   @PluginMethod
   fun listenTransactionStateChanges(call: PluginCall) {
 
-    SingletonClass.transactionsObservers.add { x ->
+    JokHelperStatic.transactionsObservers.add { x ->
       val ret = JSObject()
       ret.put("transactionId", x.purchaseToken)
-      ret.put("transactionState", x.purchaseState)
+      ret.put("transactionState", when (x.purchaseState) {
+        Purchase.PurchaseState.PURCHASED -> 1 /*Purchased*/
+        Purchase.PurchaseState.PENDING -> 0 /*Purchasing*/
+        else -> 4 /*Deferred*/
+      })
       ret.put("transactionReceipt", x.originalJson)
       ret.put("productId", x.sku)
       ret.put("platform", "ANDROID")
@@ -421,22 +603,24 @@ class JokHelper : Plugin() {
       this.notifyListeners("TransactionStateChange", ret)
     }
 
-    val consumablePurchases = SingletonClass.billingClient?.queryPurchases(INAPP)
-    val subscriptionPurchases = SingletonClass.billingClient?.queryPurchases(SUBS)
+    val consumablePurchases = JokHelperStatic.billingRepo?.billingClient?.queryPurchases(INAPP)
+    val subscriptionPurchases = JokHelperStatic.billingRepo?.billingClient?.queryPurchases(SUBS)
 
-    consumablePurchases?.purchasesList?.forEach { SingletonClass.publishNewTransaction(it) }
-    subscriptionPurchases?.purchasesList?.forEach { SingletonClass.publishNewTransaction(it) }
+    consumablePurchases?.purchasesList?.forEach { JokHelperStatic.publishNewTransaction(it) }
+    subscriptionPurchases?.purchasesList?.forEach { JokHelperStatic.publishNewTransaction(it) }
+
+    Log.i("BILLING", "Pending transactions on startup consumable: ${consumablePurchases?.purchasesList?.size} subscription: ${subscriptionPurchases?.purchasesList?.size}")
   }
 
   @PluginMethod
   fun platformInfo(call: PluginCall) {
 
-    val clientVersion = SingletonClass.versionName
+    val clientVersion = JokHelperStatic.versionName
 
     val ret = JSObject()
     ret.put("success", true)
     ret.put("platform", "ANDROID")
-    ret.put("packageName", SingletonClass.activity!!.packageName)
+    ret.put("packageName", JokHelperStatic.activity!!.packageName)
     ret.put("isMobileApp", true)
     ret.put("clientVersion", clientVersion)
     call.success(ret)
@@ -448,9 +632,9 @@ class JokHelper : Plugin() {
 //    var showReviewPage = call.getBoolean("showReviewPage", false)
 
     try {
-      SingletonClass.openAppUrl(Uri.parse("market://details?id=$appId"))
+      JokHelperStatic.openAppUrl(Uri.parse("market://details?id=$appId"))
     } catch (ex: ActivityNotFoundException) {
-      SingletonClass.openAppUrl(Uri.parse("https://play.google.com/store/apps/details?id=$appId"))
+      JokHelperStatic.openAppUrl(Uri.parse("https://play.google.com/store/apps/details?id=$appId"))
     }
 
     val ret = JSObject()
@@ -467,7 +651,7 @@ class JokHelper : Plugin() {
     var audioEffect = fxEffects[name]
 
     if (audioEffect == null) {
-      audioEffect = SingletonClass.getAudioEffect(name)
+      audioEffect = JokHelperStatic.getAudioEffect(name)
       if (audioEffect == null) {
         val ret = JSObject()
         ret.put("value", false)
@@ -491,11 +675,19 @@ class JokHelper : Plugin() {
   @PluginMethod
   fun openMailbox(call: PluginCall) {
 
-    val intent = Intent(Intent.ACTION_MAIN)
-    intent.addCategory(Intent.CATEGORY_APP_EMAIL)
-    intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    try {
+      val intent = Intent(Intent.ACTION_MAIN)
 
-    SingletonClass.activity?.startActivity(intent)
+      intent.action = Intent.ACTION_MAIN
+      intent.addCategory(Intent.CATEGORY_APP_EMAIL)
+
+      JokHelperStatic.activity?.startActivity(intent)
+    } catch (err: Error) {
+      val ret = JSObject()
+      ret.put("value", false)
+      call.success(ret)
+      return
+    }
 
     val ret = JSObject()
     ret.put("value", true)
@@ -505,7 +697,7 @@ class JokHelper : Plugin() {
   @PluginMethod
   fun vibrate(call: PluginCall) {
 
-    val vibrator = SingletonClass.activity?.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+    val vibrator = JokHelperStatic.activity?.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
     if (Build.VERSION.SDK_INT >= 26) {
       vibrator.vibrate(VibrationEffect.createOneShot(500, VibrationEffect.DEFAULT_AMPLITUDE))
     } else {
