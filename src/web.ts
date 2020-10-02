@@ -125,7 +125,7 @@ export class JokHelperWeb
   }> {
     return Promise.resolve({
       success: true,
-      platform: 'web',
+      platform: 'WEB',
       clientVersion: '',
     })
   }
