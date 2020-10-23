@@ -1,14 +1,14 @@
-import { WebPlugin } from '@capacitor/core'
+import { registerWebPlugin, WebPlugin } from '@capacitor/core'
 import {
+  FinishPaymentProps,
   JokHelperPlugin,
+  LoadProductsProps,
+  PlayAudioProps,
+  RequestPaymentProps,
   SetKeychainItemProps,
   SetOrientationLockProps,
-  LoadProductsProps,
   SKProduct,
-  RequestPaymentProps,
-  FinishPaymentProps,
   ViewAppPageProps,
-  PlayAudioProps,
 } from './definitions'
 
 export class JokHelperWeb
@@ -134,8 +134,26 @@ export class JokHelperWeb
     return Promise.resolve({ value: false })
   }
 
-  playAudio(_data: PlayAudioProps): Promise<{ value: boolean }> {
-    return Promise.resolve({ value: false })
+  private audioCache = new Map<string, HTMLAudioElement>()
+
+  playAudio(data: PlayAudioProps): Promise<{ value: boolean }> {
+    const { name, path = '/assets/audios' } = data
+
+    const url = `${path}/${name}.mp3`
+
+    if (!this.audioCache.has(url)) {
+      this.audioCache.set(url, new Audio(url))
+    }
+
+    const audioElement = this.audioCache.get(url)
+    if (!audioElement) {
+      return Promise.resolve({ value: false })
+    }
+
+    audioElement.currentTime = 0
+    audioElement.play()
+
+    return Promise.resolve({ value: true })
   }
 
   openMailbox(): Promise<{ value: boolean }> {
@@ -157,5 +175,4 @@ const JokHelper = new JokHelperWeb()
 
 export { JokHelper }
 
-import { registerWebPlugin } from '@capacitor/core'
 registerWebPlugin(JokHelper)

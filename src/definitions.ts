@@ -57,6 +57,7 @@ export interface JokHelperPlugin {
 
 export interface PlayAudioProps {
   name: string
+  path?: string
 }
 
 export interface ViewAppPageProps {
