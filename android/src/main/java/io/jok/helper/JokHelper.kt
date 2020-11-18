@@ -713,8 +713,6 @@ class JokHelper : Plugin() {
 
   @PluginMethod
   fun requestReview(call: PluginCall) {
-//    val manager = ReviewManagerFactory.create(context)
-
     JokHelperStatic.showAppReviewUI()
 
     val ret = JSObject()
