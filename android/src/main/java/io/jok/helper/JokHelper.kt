@@ -47,6 +47,8 @@ object JokHelperStatic {
 
   var getPushNotificationState: (_: Any) -> JSObject = { _ -> JSObject() }
 
+  var showAppReviewUI: () -> Boolean = { false }
+
 
   fun init() {
     onConnection = { onSuccess: () -> Any ->
@@ -703,6 +705,17 @@ class JokHelper : Plugin() {
     } else {
       vibrator.vibrate(500)
     }
+
+    val ret = JSObject()
+    ret.put("value", true)
+    call.success(ret)
+  }
+
+  @PluginMethod
+  fun requestReview(call: PluginCall) {
+//    val manager = ReviewManagerFactory.create(context)
+
+    JokHelperStatic.showAppReviewUI()
 
     val ret = JSObject()
     ret.put("value", true)

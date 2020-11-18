@@ -475,6 +475,12 @@ public class JokHelper: CAPPlugin {
 
         call.success([ "value": true ])
     }
+    
+    @objc func requestReview(_ call: CAPPluginCall) {
+        SKStoreReviewController.requestReview()
+        
+        call.success([ "value": true ])
+    }
 }
 
 public class ProductsResultDelegate: NSObject, SKProductsRequestDelegate {

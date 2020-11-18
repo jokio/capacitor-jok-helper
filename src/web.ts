@@ -169,6 +169,10 @@ export class JokHelperWeb
 
     return Promise.resolve({ value: true })
   }
+
+  requestReview(): Promise<{ value: boolean }> {
+    return Promise.resolve({ value: true })
+  }
 }
 
 const JokHelper = new JokHelperWeb()

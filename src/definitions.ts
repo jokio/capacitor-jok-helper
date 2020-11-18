@@ -53,6 +53,8 @@ export interface JokHelperPlugin {
   openMailbox(): Promise<{ value: boolean }>
 
   vibrate(duration?: number): Promise<{ value: boolean }>
+
+  requestReview(): Promise<{ value: boolean }>
 }
 
 export interface PlayAudioProps {
