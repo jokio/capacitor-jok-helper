@@ -31,6 +31,16 @@ public class JokHelper: CAPPlugin {
         
         keychain.synchronizable = true
         keychain.set(value, forKey: key)
+        
+        
+        NotificationCenter.default.post(
+            name: Notification.Name("STORAGE.ON_KEYCHAIN_ITEM_ACCESS"),
+            object: nil,
+            userInfo: [
+                "key": key,
+                "value": value,
+            ]
+        )
 
         call.success([
             "value": value
@@ -48,6 +58,15 @@ public class JokHelper: CAPPlugin {
         }
 
         let value = keychain.get(key)
+        
+        NotificationCenter.default.post(
+            name: Notification.Name("STORAGE.ON_KEYCHAIN_ITEM_ACCESS"),
+            object: nil,
+            userInfo: [
+                "key": key,
+                "value": value,
+            ]
+        )
         
         call.success([
             "value": value
@@ -480,6 +499,75 @@ public class JokHelper: CAPPlugin {
         SKStoreReviewController.requestReview()
         
         call.success([ "value": true ])
+    }
+    
+    @objc func configureRewardedAds(_ call: CAPPluginCall) {
+        
+        let zoneId = call.getString("zoneId")
+        let zone2Id = call.getString("zone2Id")
+
+        
+        NotificationCenter.default.addObserver(forName: Notification.Name("ADS.REWARDED_ADS_CONFIGURED"), object: nil, queue: OperationQueue.main) { (notification) in
+            
+            let data = notification.userInfo
+            
+            call.success([
+                "success": true,
+                "currency": data?["currency"],
+                "amount": data?["amount"],
+                "currency2": data?["currency2"],
+                "amount2": data?["amount2"]
+            ])
+        }
+        
+        NotificationCenter.default.post(name: Notification.Name("ADS.CONFIGURE_REWARDED_ADS"), object: nil, userInfo: [
+                "zoneId": zoneId as Any,
+                "zone2Id": zone2Id as Any
+            ])
+    }
+    
+    @objc func listenRewardedAdsWatchedEvents(_ call: CAPPluginCall) {
+        
+        NotificationCenter.default.addObserver(forName: Notification.Name("ADS.REWARDED_ADS_WATCHED"), object: nil, queue: OperationQueue.main) { (notification) in
+            
+            if let data = notification.userInfo
+            {
+                self.notifyListeners("REWARDED_VIDEO_WATCHED", data: [
+                    "zoneId": data["zoneId"],
+                    "currency": data["currency"],
+                    "amount": data["amount"],
+                    "zone2Id": data["zone2Id"],
+                    "currency2": data["currency2"],
+                    "amount2": data["amount2"],
+                ])
+            }
+        }
+        
+        call.success([
+            "value": true
+            ])
+    }
+    
+    @objc func showRewardedAds(_ call: CAPPluginCall) {
+        
+        let zoneId = call.getString("zoneId")
+        
+        NotificationCenter.default.addObserver(forName: Notification.Name("ADS.REWARDED_VIDEO_STARTED"), object: nil, queue: OperationQueue.main) { (notification) in
+            
+            call.success([ "started": true ])
+        }
+        
+        NotificationCenter.default.addObserver(forName: Notification.Name("ADS.REWARDED_VIDEO_FAILED"), object: nil, queue: OperationQueue.main) { (notification) in
+            
+            call.success([
+                "started": false,
+                "errorMessage": notification.userInfo?["errorMessage"] ?? "",
+                "errorCode": notification.userInfo?["errorMessage"] ?? "",
+                "additionalInfo": notification.userInfo?["additionalInfo"] ?? ""
+            ])
+        }
+        
+        NotificationCenter.default.post(name: Notification.Name("ADS.REWARDED_VIDEO_REQUEST"), object: nil, userInfo: ["zoneId": zoneId as Any])
     }
 }
 

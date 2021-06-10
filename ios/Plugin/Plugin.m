@@ -30,5 +30,8 @@ CAP_PLUGIN(JokHelper, "JokHelper",
            CAP_PLUGIN_METHOD(vibrate, CAPPluginReturnPromise);
            
            CAP_PLUGIN_METHOD(requestReview, CAPPluginReturnPromise);
+           
+           CAP_PLUGIN_METHOD(configureRewardedAds, CAPPluginReturnPromise);
+           CAP_PLUGIN_METHOD(listenRewardedAdsWatchedEvents, CAPPluginReturnPromise);
+           CAP_PLUGIN_METHOD(showRewardedAds, CAPPluginReturnPromise);
 )
-

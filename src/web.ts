@@ -13,7 +13,8 @@ import {
 
 export class JokHelperWeb
   extends WebPlugin
-  implements JokHelperPlugin {
+  implements JokHelperPlugin
+{
   constructor() {
     super({
       name: 'JokHelper',
@@ -82,9 +83,7 @@ export class JokHelperWeb
     return Promise.resolve({ value: false })
   }
 
-  loadProducts(
-    _: LoadProductsProps,
-  ): Promise<{
+  loadProducts(_: LoadProductsProps): Promise<{
     success: boolean
     products: SKProduct[]
     invalidProducts: string[]
@@ -172,6 +171,39 @@ export class JokHelperWeb
 
   requestReview(): Promise<{ value: boolean }> {
     return Promise.resolve({ value: true })
+  }
+
+  configureRewardedAds(_: {
+    zoneId: string
+    zone2Id: string
+  }): Promise<{
+    success: boolean
+    currency: string
+    amount: number
+    currency2: string
+    amount2: number
+  }> {
+    return Promise.resolve(<any>{ success: false })
+  }
+
+  listenRewardedAdsWatchedEvents(): Promise<{
+    value: boolean
+  }> {
+    return Promise.resolve({ value: false })
+  }
+
+  showRewardedAds(_: { zoneId: string }): Promise<{
+    started: boolean
+    errorMessage: string
+    errorCode: string
+    additionalInfo: string
+  }> {
+    return Promise.resolve({
+      started: false,
+      additionalInfo: 'Not implemented',
+      errorCode: '',
+      errorMessage: '',
+    })
   }
 }
 

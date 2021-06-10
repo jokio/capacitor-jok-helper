@@ -24,9 +24,7 @@ export interface JokHelperPlugin {
   askPushNotificationsPermission(): Promise<{ accepted: boolean }>
   openAppSettings(): Promise<{ success: boolean }>
   canMakePayments(): Promise<{ value: boolean }>
-  loadProducts(
-    data: LoadProductsProps,
-  ): Promise<{
+  loadProducts(data: LoadProductsProps): Promise<{
     success: boolean
     products: SKProduct[]
     invalidProducts: string[]
@@ -55,6 +53,28 @@ export interface JokHelperPlugin {
   vibrate(duration?: number): Promise<{ value: boolean }>
 
   requestReview(): Promise<{ value: boolean }>
+
+  configureRewardedAds(data: {
+    zoneId: string
+    zone2Id: string
+  }): Promise<{
+    success: boolean
+    currency: string
+    amount: number
+    currency2: string
+    amount2: number
+  }>
+
+  listenRewardedAdsWatchedEvents(): Promise<{
+    value: boolean
+  }>
+
+  showRewardedAds(data: { zoneId: string }): Promise<{
+    started: boolean
+    errorMessage: string
+    errorCode: string
+    additionalInfo: string
+  }>
 }
 
 export interface PlayAudioProps {
