@@ -533,12 +533,8 @@ public class JokHelper: CAPPlugin {
             if let data = notification.userInfo
             {
                 self.notifyListeners("REWARDED_VIDEO_WATCHED", data: [
-                    "zoneId": data["zoneId"],
                     "currency": data["currency"],
                     "amount": data["amount"],
-                    "zone2Id": data["zone2Id"],
-                    "currency2": data["currency2"],
-                    "amount2": data["amount2"],
                 ])
             }
         }

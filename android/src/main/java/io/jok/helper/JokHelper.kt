@@ -1,5 +1,6 @@
 package io.jok.helper
 
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.ActivityNotFoundException
 import android.content.Context
@@ -19,6 +20,18 @@ import com.android.billingclient.api.BillingClient.SkuType.SUBS
 import com.getcapacitor.*
 
 
+class AdColonyConfigureResult constructor(val currency: String, val amount: Number )  {
+}
+
+class AdColonyShowAdsResult constructor(
+  val started: Boolean,
+  val errorMessage: String,
+  val errorCode: String,
+  val additionalInfo: String,
+)  {
+}
+
+@SuppressLint("StaticFieldLeak")
 object JokHelperStatic {
   var activity: Activity? = null
   var isStoreReady: Boolean = false
@@ -37,6 +50,16 @@ object JokHelperStatic {
     transactionsObservers.forEach { it(x) }
   }
 
+  var adsWatchedObservers = mutableListOf<(JSObject) -> Unit>()
+
+  var publishAdsWatchedObservers: (x: JSObject) -> Any = { x ->
+    adsWatchedObservers.forEach { it(x) }
+  }
+
+
+  var onAccessKeychainItem: (key: String, value: String?) -> Boolean = { key, values -> false }
+
+
   var pushNotificationsObservers = mutableListOf<(JSObject) -> Unit>()
 
   var pendingPushNotifications = mutableListOf<JSObject>()
@@ -46,6 +69,10 @@ object JokHelperStatic {
   }
 
   var getPushNotificationState: (_: Any) -> JSObject = { _ -> JSObject() }
+
+  var configureAdColony: (zoneId: String, zone2Id: String, cb: (x: Array<AdColonyConfigureResult>) -> Boolean) -> Boolean  = { a, b, c -> false }
+
+  var showRewardedAds: (zoneId: String, cb: (result: AdColonyShowAdsResult) -> Boolean) -> Boolean = { a, cb -> false }
 
   var showAppReviewUI: () -> Boolean = { false }
 
@@ -223,6 +250,8 @@ class JokHelper : Plugin() {
       }
     }
 
+    JokHelperStatic.onAccessKeychainItem(key, value)
+
     val ret = JSObject()
     ret.put("value", value)
     call.success(ret)
@@ -234,6 +263,8 @@ class JokHelper : Plugin() {
 
     val pref = JokHelperStatic.activity?.getPreferences(Context.MODE_PRIVATE)
     val result = pref?.getString(key, null)
+
+    JokHelperStatic.onAccessKeychainItem(key, result)
 
     val ret = JSObject()
     ret.put("value", result)
@@ -718,5 +749,52 @@ class JokHelper : Plugin() {
     val ret = JSObject()
     ret.put("value", true)
     call.success(ret)
+  }
+
+  @PluginMethod
+  fun configureRewardedAds(call: PluginCall) {
+
+    val zoneId = call.getString("zoneId")
+    val zone2Id = call.getString("zone2Id")
+
+    JokHelperStatic.configureAdColony(zoneId, zone2Id) { result ->
+      val ret = JSObject()
+      ret.put("currency", result[0].currency)
+      ret.put("amount", result[0].amount)
+      ret.put("currency2", result[1].currency)
+      ret.put("amount2", result[1].amount)
+      call.success(ret)
+
+      true
+    }
+  }
+
+  @PluginMethod
+  fun listenRewardedAdsWatchedEvents(call: PluginCall) {
+
+    JokHelperStatic.adsWatchedObservers.add { x ->
+      this.notifyListeners("REWARDED_VIDEO_WATCHED", x)
+    }
+
+    val ret = JSObject()
+    ret.put("value", true)
+    call.success(ret)
+  }
+
+  @PluginMethod
+  fun showRewardedAds(call: PluginCall) {
+
+    val zoneId = call.getString("zoneId")
+
+    JokHelperStatic.showRewardedAds(zoneId) { result ->
+      val ret = JSObject()
+      ret.put("started", result.started)
+      ret.put("errorMessage", result.errorMessage)
+      ret.put("errorCode", result.errorCode)
+      ret.put("additionalInfo", result.additionalInfo)
+      call.success(ret)
+
+      true
+    }
   }
 }
