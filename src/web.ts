@@ -1,6 +1,7 @@
 import { registerWebPlugin, WebPlugin } from '@capacitor/core'
 import {
   FinishPaymentProps,
+  GetKeychainItemProps,
   JokHelperPlugin,
   LoadProductsProps,
   PlayAudioProps,
@@ -33,7 +34,7 @@ export class JokHelperWeb
     return { value }
   }
 
-  async getKeychainItem({ key }: SetKeychainItemProps) {
+  async getKeychainItem({ key }: GetKeychainItemProps) {
     const value = localStorage.getItem(key)
 
     return { value }
