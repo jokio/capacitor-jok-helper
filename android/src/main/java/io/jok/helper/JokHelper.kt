@@ -250,7 +250,7 @@ class JokHelper : Plugin() {
       }
     }
 
-    JokHelperStatic.onAccessKeychainItem(key, value)
+    JokHelperStatic.onAccessKeychainItem(key.toString(), value)
 
     val ret = JSObject()
     ret.put("value", value)
@@ -264,7 +264,7 @@ class JokHelper : Plugin() {
     val pref = JokHelperStatic.activity?.getPreferences(Context.MODE_PRIVATE)
     val result = pref?.getString(key, null)
 
-    JokHelperStatic.onAccessKeychainItem(key, result)
+    JokHelperStatic.onAccessKeychainItem(key.toString(), result)
 
     val ret = JSObject()
     ret.put("value", result)
@@ -524,7 +524,7 @@ class JokHelper : Plugin() {
     }
 
     if (JokHelperStatic.billingRepo?.billingClient?.isReady == true) {
-      var responseCode = initRequestPayment(productId)
+      var responseCode = initRequestPayment(productId.toString())
 
       Log.i("BILLING", "requestPayment finished 1")
 
@@ -538,7 +538,7 @@ class JokHelper : Plugin() {
 
 
     JokHelperStatic.createBillingClient(true) {
-      var responseCode = initRequestPayment(productId)
+      var responseCode = initRequestPayment(productId.toString())
 
       Log.i("BILLING", "requestPayment finished 2")
 
@@ -571,7 +571,7 @@ class JokHelper : Plugin() {
 
     Log.i("BILLING", "finishPayment starting...")
 
-    finishPaymentWrapper(transactionId, 0) { isSuccess, errorMessage ->
+    finishPaymentWrapper(transactionId.toString(), 0) { isSuccess, errorMessage ->
       val ret = JSObject()
       ret.put("success", isSuccess)
       ret.put("message", errorMessage)
@@ -684,7 +684,7 @@ class JokHelper : Plugin() {
     var audioEffect = fxEffects[name]
 
     if (audioEffect == null) {
-      audioEffect = JokHelperStatic.getAudioEffect(name)
+      audioEffect = JokHelperStatic.getAudioEffect(name.toString())
       if (audioEffect == null) {
         val ret = JSObject()
         ret.put("value", false)
@@ -692,7 +692,7 @@ class JokHelper : Plugin() {
         return
       }
 
-      fxEffects[name] = audioEffect
+      fxEffects[name.toString()] = audioEffect
     }
 
     if (audioEffect.isPlaying) {
@@ -757,7 +757,7 @@ class JokHelper : Plugin() {
     val zoneId = call.getString("zoneId")
     val zone2Id = call.getString("zone2Id")
 
-    JokHelperStatic.configureAdColony(zoneId, zone2Id) { result ->
+    JokHelperStatic.configureAdColony(zoneId.toString(), zone2Id.toString()) { result ->
       val ret = JSObject()
       ret.put("currency", result[0].currency)
       ret.put("amount", result[0].amount)
@@ -786,7 +786,7 @@ class JokHelper : Plugin() {
 
     val zoneId = call.getString("zoneId")
 
-    JokHelperStatic.showRewardedAds(zoneId) { result ->
+    JokHelperStatic.showRewardedAds(zoneId.toString()) { result ->
       val ret = JSObject()
       ret.put("started", result.started)
       ret.put("errorMessage", result.errorMessage)
