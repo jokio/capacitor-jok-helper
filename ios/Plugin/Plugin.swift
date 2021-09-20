@@ -267,8 +267,8 @@ public class JokHelper: CAPPlugin {
     var products: [SKProduct] = []
     
     @objc func loadProducts(_ call: CAPPluginCall) {
-        let identifiers: [String] = call.get("productIds", [String].self)!
-        
+        let identifiers: [String] = (call.getArray("productIds")!.capacitor.replacingNullValues() as? [String])!
+
         // Create a set for the product identifiers.
         let productIdentifiers = Set<String>(identifiers)
 
