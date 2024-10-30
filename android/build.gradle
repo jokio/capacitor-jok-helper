@@ -1,29 +1,40 @@
 ext {
-    junitVersion =  project.hasProperty('junitVersion') ? rootProject.ext.junitVersion : '4.12'
-    androidxJunitVersion =  project.hasProperty('androidxJunitVersion') ? rootProject.ext.androidxJunitVersion : '1.1.1'
-    androidxEspressoCoreVersion =  project.hasProperty('androidxEspressoCoreVersion') ? rootProject.ext.androidxEspressoCoreVersion : '3.2.0'
+    capacitorVersion = System.getenv('CAPACITOR_VERSION')
+    junitVersion = project.hasProperty('junitVersion') ? rootProject.ext.junitVersion : '4.13.2'
+    androidxAppCompatVersion = project.hasProperty('androidxAppCompatVersion') ? rootProject.ext.androidxAppCompatVersion : '1.6.1'
+    androidxJunitVersion = project.hasProperty('androidxJunitVersion') ? rootProject.ext.androidxJunitVersion : '1.1.5'
+    androidxEspressoCoreVersion = project.hasProperty('androidxEspressoCoreVersion') ? rootProject.ext.androidxEspressoCoreVersion : '3.5.1'
 }
 
 buildscript {
-    ext.kotlin_version = '1.4.10'
     repositories {
         google()
-        jcenter()
+        mavenCentral()
+        maven {
+            url "https://plugins.gradle.org/m2/"
+        }
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.6.1'
-        classpath "org.jetbrains.kotlin:kotlin-gradle-plugin:$kotlin_version"
+        classpath 'com.android.tools.build:gradle:8.2.1'
+        if (System.getenv("CAP_PLUGIN_PUBLISH") == "true") {
+            classpath 'io.github.gradle-nexus:publish-plugin:1.3.0'
+        }
     }
 }
 
 apply plugin: 'com.android.library'
-apply plugin: 'kotlin-android'
+if (System.getenv("CAP_PLUGIN_PUBLISH") == "true") {
+    apply plugin: 'io.github.gradle-nexus.publish-plugin'
+    apply from: file('../../scripts/android/publish-root.gradle')
+    apply from: file('../../scripts/android/publish-module.gradle')
+}
 
 android {
-    compileSdkVersion project.hasProperty('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 29
+    namespace "com.capacitorjs.plugins.device"
+    compileSdk project.hasProperty('compileSdkVersion') ? rootProject.ext.compileSdkVersion : 34
     defaultConfig {
-        minSdkVersion project.hasProperty('minSdkVersion') ? rootProject.ext.minSdkVersion : 21
-        targetSdkVersion project.hasProperty('targetSdkVersion') ? rootProject.ext.targetSdkVersion : 29
+        minSdkVersion project.hasProperty('minSdkVersion') ? rootProject.ext.minSdkVersion : 22
+        targetSdkVersion project.hasProperty('targetSdkVersion') ? rootProject.ext.targetSdkVersion : 34
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
@@ -37,24 +48,32 @@ android {
     lintOptions {
         abortOnError false
     }
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+    publishing {
+        singleVariant("release")
+    }
 }
 
 repositories {
     google()
-    jcenter()
     mavenCentral()
 }
 
 
 dependencies {
     implementation fileTree(dir: 'libs', include: ['*.jar'])
-    implementation project(':capacitor-android')
-    implementation 'com.android.billingclient:billing:3.0.0'
+
+    if (System.getenv("CAP_PLUGIN_PUBLISH") == "true") {
+        implementation "com.capacitorjs:core:$capacitorVersion"
+    } else {
+        implementation project(':capacitor-android')
+    }
+
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
     testImplementation "junit:junit:$junitVersion"
     androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
     androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
-    implementation "androidx.core:core-ktx:+"
-    implementation "org.jetbrains.kotlin:kotlin-stdlib-jdk7:$kotlin_version"
-    implementation 'com.google.android.play:core:1.8.3'
-    implementation 'com.google.android.play:core-ktx:1.8.1'
 }

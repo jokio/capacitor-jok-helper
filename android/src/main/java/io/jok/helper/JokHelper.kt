@@ -18,9 +18,10 @@ import com.android.billingclient.api.BillingClient.BillingResponseCode
 import com.android.billingclient.api.BillingClient.SkuType.INAPP
 import com.android.billingclient.api.BillingClient.SkuType.SUBS
 import com.getcapacitor.*
+import kotlinx.coroutines.runBlocking
 
 
-class AdColonyConfigureResult constructor(val currency: String, val amount: Number )  {
+class AdColonyConfigureResult constructor(val currency: String, val amount: Number) {
 }
 
 class AdColonyShowAdsResult constructor(
@@ -28,7 +29,7 @@ class AdColonyShowAdsResult constructor(
   val errorMessage: String,
   val errorCode: String,
   val additionalInfo: String,
-)  {
+) {
 }
 
 @SuppressLint("StaticFieldLeak")
@@ -40,7 +41,8 @@ object JokHelperStatic {
   var versionName: String = ""
   var openAppUrl: (url: Uri) -> Any = { x -> x }
   var getAudioEffect: (name: String) -> MediaPlayer? = { _ -> null }
-  var onConnection: (onSuccess: () -> Any) -> BillingClientStateListener = { _ -> null as BillingClientStateListener }
+  var onConnection: (onSuccess: () -> Any) -> BillingClientStateListener =
+    { _ -> null as BillingClientStateListener }
 
   var billingRepo: BillingRepo? = null
 
@@ -70,9 +72,11 @@ object JokHelperStatic {
 
   var getPushNotificationState: (_: Any) -> JSObject = { _ -> JSObject() }
 
-  var configureAdColony: (zoneId: String, zone2Id: String, cb: (x: Array<AdColonyConfigureResult>) -> Boolean) -> Boolean  = { a, b, c -> false }
+  var configureAdColony: (zoneId: String, zone2Id: String, cb: (x: Array<AdColonyConfigureResult>) -> Boolean) -> Boolean =
+    { a, b, c -> false }
 
-  var showRewardedAds: (zoneId: String, cb: (result: AdColonyShowAdsResult) -> Boolean) -> Boolean = { a, cb -> false }
+  var showRewardedAds: (zoneId: String, cb: (result: AdColonyShowAdsResult) -> Boolean) -> Boolean =
+    { a, cb -> false }
 
   var showAppReviewUI: () -> Boolean = { false }
 
@@ -129,56 +133,58 @@ object JokHelperStatic {
     billingRepo?.disconnect()
   }
 
-  fun finishTransaction(transactionId: String, cb: (success: Boolean, shouldRetry: Boolean, errorMessage: String?) -> Any) {
-    val consumablePurchases = billingRepo?.billingClient?.queryPurchases(INAPP)
-    var purchase = consumablePurchases?.purchasesList?.find { it.purchaseToken == transactionId }
-    if (purchase !== null) {
-      val consumeParams =
-        ConsumeParams.newBuilder()
-          .setPurchaseToken(purchase.purchaseToken)
-          .build()
+  fun finishTransaction(
+    transactionId: String,
+    cb: (success: Boolean, shouldRetry: Boolean, errorMessage: String?) -> Any
+  ) {
+    runBlocking {
+      val consumablePurchases = billingRepo?.billingClient?.queryPurchasesAsync(INAPP)
+      var purchase = consumablePurchases?.purchasesList?.find { it.purchaseToken == transactionId }
+      if (purchase !== null) {
+        val consumeParams =
+          ConsumeParams.newBuilder()
+            .setPurchaseToken(purchase.purchaseToken)
+            .build()
 
-      billingRepo?.billingClient?.consumeAsync(consumeParams) { billingResult, _ ->
-        if (billingResult.responseCode == BillingResponseCode.OK) {
-          cb(true, false, null)
+        billingRepo?.billingClient?.consumeAsync(consumeParams) { billingResult, _ ->
+          if (billingResult.responseCode == BillingResponseCode.OK) {
+            cb(true, false, null)
+          } else {
+            val shouldRetry =
+              billingResult.responseCode == BillingResponseCode.SERVICE_DISCONNECTED || billingResult.responseCode == BillingResponseCode.SERVICE_TIMEOUT
+
+            cb(false, shouldRetry, billingResult.responseCode.toString())
+          }
+        }
+      } else {
+        val subscriptionPurchases = billingRepo?.billingClient?.queryPurchasesAsync(SUBS)
+        purchase = subscriptionPurchases?.purchasesList?.find { it.purchaseToken == transactionId }
+
+        if (purchase !== null) {
+
+          if (purchase.isAcknowledged) {
+            cb(true, false, null)
+          } else {
+            val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder()
+              .setPurchaseToken(purchase.purchaseToken)
+
+            billingRepo?.billingClient?.acknowledgePurchase(acknowledgePurchaseParams.build()) { billingResult ->
+
+              if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
+                cb(true, false, null)
+              } else {
+                val shouldRetry =
+                  billingResult.responseCode == BillingResponseCode.SERVICE_DISCONNECTED || billingResult.responseCode == BillingResponseCode.SERVICE_TIMEOUT
+
+                cb(false, shouldRetry, billingResult.debugMessage)
+              }
+            }
+          }
         } else {
-          val shouldRetry = billingResult.responseCode == BillingResponseCode.SERVICE_DISCONNECTED || billingResult.responseCode == BillingResponseCode.SERVICE_TIMEOUT
-
-          cb(false, shouldRetry, billingResult.responseCode.toString())
+          cb(false, true, "Order not found")
         }
       }
-
-      return
     }
-
-    val subscriptionPurchases = billingRepo?.billingClient?.queryPurchases(SUBS)
-    purchase = subscriptionPurchases?.purchasesList?.find { it.purchaseToken == transactionId }
-
-    if (purchase !== null) {
-
-      if (purchase.isAcknowledged) {
-        cb(true, false, null)
-        return
-      }
-
-      val acknowledgePurchaseParams = AcknowledgePurchaseParams.newBuilder()
-        .setPurchaseToken(purchase.purchaseToken)
-
-      billingRepo?.billingClient?.acknowledgePurchase(acknowledgePurchaseParams.build()) { billingResult ->
-
-        if (billingResult.responseCode == BillingClient.BillingResponseCode.OK) {
-          cb(true, false, null)
-        } else {
-          val shouldRetry = billingResult.responseCode == BillingResponseCode.SERVICE_DISCONNECTED || billingResult.responseCode == BillingResponseCode.SERVICE_TIMEOUT
-
-          cb(false, shouldRetry, billingResult.debugMessage)
-        }
-      }
-
-      return
-    }
-
-    cb(false, true, "Order not found")
   }
 }
 
@@ -463,7 +469,11 @@ class JokHelper : Plugin() {
     }
   }
 
-  private fun requestLoadProducts(productIds: List<String>, skuType: String, cb: (success: Boolean, res: List<JSObject>) -> Any) {
+  private fun requestLoadProducts(
+    productIds: List<String>,
+    skuType: String,
+    cb: (success: Boolean, res: List<JSObject>) -> Any
+  ) {
 
     val params = SkuDetailsParams.newBuilder()
     params.setSkusList(productIds.toList()).setType(skuType)
@@ -481,11 +491,13 @@ class JokHelper : Plugin() {
 
             val items = skuDetailsList?.map { x ->
               val res = JSObject()
-              res.put("title", when (x.sku) {
-                "io.jok.vip_membership_1_month" -> "Month"
-                "io.jok.vip_membership_6_month" -> "6 Months"
-                else -> x.title
-              })
+              res.put(
+                "title", when (x.sku) {
+                  "io.jok.vip_membership_1_month" -> "Month"
+                  "io.jok.vip_membership_6_month" -> "6 Months"
+                  else -> x.title
+                }
+              )
               res.put("originalTitle", x.title)
               res.put("description", x.description)
               res.put("price", x.originalPrice)
@@ -503,6 +515,7 @@ class JokHelper : Plugin() {
 
             cb(true, items)
           }
+
           else -> {
             Log.w("InvalidBillingResponse", billingResult.responseCode.toString())
             cb(false, emptyList())
@@ -562,7 +575,10 @@ class JokHelper : Plugin() {
       .setSkuDetails(product)
       .build()
 
-    return JokHelperStatic.billingRepo?.billingClient?.launchBillingFlow(JokHelperStatic.activity!!, flowParams)?.responseCode
+    return JokHelperStatic.billingRepo?.billingClient?.launchBillingFlow(
+      JokHelperStatic.activity!!,
+      flowParams
+    )?.responseCode
   }
 
   @PluginMethod
@@ -579,7 +595,11 @@ class JokHelper : Plugin() {
     }
   }
 
-  private fun finishPaymentWrapper(transactionId: String, attemptsCount: Int, cb: (success: Boolean, errorMessage: String?) -> Any) {
+  private fun finishPaymentWrapper(
+    transactionId: String,
+    attemptsCount: Int,
+    cb: (success: Boolean, errorMessage: String?) -> Any
+  ) {
 
     if (JokHelperStatic.billingRepo?.billingClient?.isReady == true) {
       JokHelperStatic.finishTransaction(transactionId) { isSuccess, shouldRetry, errorMessage ->
@@ -620,13 +640,15 @@ class JokHelper : Plugin() {
     JokHelperStatic.transactionsObservers.add { x ->
       val ret = JSObject()
       ret.put("transactionId", x.purchaseToken)
-      ret.put("transactionState", when (x.purchaseState) {
-        Purchase.PurchaseState.PURCHASED -> 1 /*Purchased*/
-        Purchase.PurchaseState.PENDING -> 0 /*Purchasing*/
-        else -> 4 /*Deferred*/
-      })
+      ret.put(
+        "transactionState", when (x.purchaseState) {
+          Purchase.PurchaseState.PURCHASED -> 1 /*Purchased*/
+          Purchase.PurchaseState.PENDING -> 0 /*Purchasing*/
+          else -> 4 /*Deferred*/
+        }
+      )
       ret.put("transactionReceipt", x.originalJson)
-      ret.put("productId", x.sku)
+      ret.put("productId", x.skus[0])
       ret.put("platform", "ANDROID")
       ret.put("hasError", false)
       ret.put("errorCode", "")
@@ -636,13 +658,20 @@ class JokHelper : Plugin() {
       this.notifyListeners("TransactionStateChange", ret)
     }
 
-    val consumablePurchases = JokHelperStatic.billingRepo?.billingClient?.queryPurchases(INAPP)
-    val subscriptionPurchases = JokHelperStatic.billingRepo?.billingClient?.queryPurchases(SUBS)
+    runBlocking {
+      val consumablePurchases =
+        JokHelperStatic.billingRepo?.billingClient?.queryPurchasesAsync(INAPP)
+      val subscriptionPurchases =
+        JokHelperStatic.billingRepo?.billingClient?.queryPurchasesAsync(SUBS)
 
-    consumablePurchases?.purchasesList?.forEach { JokHelperStatic.publishNewTransaction(it) }
-    subscriptionPurchases?.purchasesList?.forEach { JokHelperStatic.publishNewTransaction(it) }
+      consumablePurchases?.purchasesList?.forEach { JokHelperStatic.publishNewTransaction(it) }
+      subscriptionPurchases?.purchasesList?.forEach { JokHelperStatic.publishNewTransaction(it) }
 
-    Log.i("BILLING", "Pending transactions on startup consumable: ${consumablePurchases?.purchasesList?.size} subscription: ${subscriptionPurchases?.purchasesList?.size}")
+      Log.i(
+        "BILLING",
+        "Pending transactions on startup consumable: ${consumablePurchases?.purchasesList?.size} subscription: ${subscriptionPurchases?.purchasesList?.size}"
+      )
+    }
   }
 
   @PluginMethod
