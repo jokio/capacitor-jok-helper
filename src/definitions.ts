@@ -1,3 +1,5 @@
+import { PluginListenerHandle } from '@capacitor/core'
+
 declare module '@capacitor/core' {
   interface PluginRegistry {
     JokHelper: JokHelperPlugin
@@ -73,6 +75,19 @@ export interface JokHelperPlugin {
     errorCode: string
     additionalInfo: string
   }>
+
+  addListener(
+    eventName: 'TransactionStateChange',
+    listenerFunc: (x: {
+      transactionId: string
+      transactionState: string
+      transactionReceipt: string
+      productId: string
+      hasError: boolean
+      errorCode: string
+      errorMessage: string
+    }) => void,
+  ): Promise<PluginListenerHandle>
 }
 
 export interface PlayAudioProps {

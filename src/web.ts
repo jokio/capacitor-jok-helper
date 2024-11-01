@@ -1,4 +1,4 @@
-import { registerPlugin, WebPlugin } from '@capacitor/core'
+import { WebPlugin } from '@capacitor/core'
 import {
   FinishPaymentProps,
   GetKeychainItemProps,
@@ -207,10 +207,3 @@ export class JokHelperWeb
     })
   }
 }
-
-const JokHelper = registerPlugin<JokHelperPlugin>(
-  'JokHelper',
-  () => new JokHelperWeb(),
-)
-
-export { JokHelper }
