@@ -1,4 +1,4 @@
-import { registerWebPlugin, WebPlugin } from '@capacitor/core'
+import { registerPlugin, WebPlugin } from '@capacitor/core'
 import {
   FinishPaymentProps,
   GetKeychainItemProps,
@@ -208,8 +208,9 @@ export class JokHelperWeb
   }
 }
 
-const JokHelper = new JokHelperWeb()
+const JokHelper = registerPlugin<JokHelperPlugin>(
+  'JokHelper',
+  () => new JokHelperWeb(),
+)
 
 export { JokHelper }
-
-registerWebPlugin(JokHelper)
