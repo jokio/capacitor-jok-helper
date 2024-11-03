@@ -78,15 +78,7 @@ export interface JokHelperPlugin {
 
   addListener(
     eventName: 'TransactionStateChange',
-    listenerFunc: (x: {
-      transactionId: string
-      transactionState: string
-      transactionReceipt: string
-      productId: string
-      hasError: boolean
-      errorCode: string
-      errorMessage: string
-    }) => void,
+    listenerFunc: (x: TransactionStateChangeData) => void,
   ): Promise<PluginListenerHandle>
 }
 

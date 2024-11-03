@@ -356,6 +356,8 @@ public class JokHelper: CAPPlugin {
         ])
     }
     
+  
+    var iapObserver: StoreObserver?
     @objc func listenTransactionStateChanges(_ call: CAPPluginCall) {
         
         NotificationCenter.default.addObserver(forName: Notification.Name("TRANSACTION_STATE_CHANGE"), object: nil, queue: OperationQueue.main) { (notification) in
@@ -365,7 +367,9 @@ public class JokHelper: CAPPlugin {
                 self.notifyListeners("TransactionStateChange", data: data as! [String : Any])
             }
         }
-        
+        self.iapObserver = StoreObserver()
+        SKPaymentQueue.default().add(self.iapObserver!)
+      
         let transactions = SKPaymentQueue.default().transactions
 
         var receipt: String = ""
@@ -1007,5 +1011,56 @@ public struct KeychainSwiftConstants {
     
     static func toString(_ value: CFString) -> String {
         return value as String
+    }
+}
+
+
+class StoreObserver: NSObject, SKPaymentTransactionObserver {
+//                ....
+    //Initialize the store observer.
+    override init() {
+        super.init()
+        //Other initialization here.
+    }
+
+    //Observe transaction updates.
+    func paymentQueue(_ queue: SKPaymentQueue, updatedTransactions transactions: [SKPaymentTransaction]) {
+
+            var receipt: String = ""
+
+            if (transactions.count > 0) {
+                do {
+                    let receiptData = try NSData(contentsOf: Bundle.main.appStoreReceiptURL!, options: NSData.ReadingOptions.alwaysMapped)
+
+                    let base64encodedReceipt = receiptData.base64EncodedString(options: NSData.Base64EncodingOptions.endLineWithCarriageReturn)
+
+                    receipt = base64encodedReceipt
+                }
+                catch {
+                    print("ERROR: " + error.localizedDescription)
+                }
+            }
+
+            transactions.forEach { transaction in
+                var errorMessage: String = ""
+                var errorCode: SKError.Code?
+                var hasError = false
+
+                if let error = transaction.error {
+                    errorMessage = error.localizedDescription
+                    errorCode =  (transaction.error as? SKError)?.code
+                    hasError = true
+                }
+
+                NotificationCenter.default.post(name: Notification.Name("TRANSACTION_STATE_CHANGE"), object: nil, userInfo: [
+                    "transactionId": transaction.transactionIdentifier,
+                    "transactionState": transaction.transactionState.rawValue,
+                    "transactionReceipt": receipt,
+                    "productId": transaction.payment.productIdentifier,
+                    "hasError": hasError,
+                    "errorCode": (errorCode == nil) ? "" : errorCode!.rawValue,
+                    "errorMessage": errorMessage
+                ])
+            }
     }
 }
